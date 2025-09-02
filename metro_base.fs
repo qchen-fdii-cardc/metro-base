@@ -91,7 +91,7 @@ module metro =
         | Normal(a, b) -> (a + b) / 2.0  // 正态分布均值 / Normal distribution mean
         | Triangular(min, mode, max) -> (min + mode + max) / 3.0  // 三角分布均值 / Triangular mean
         | Trapezoidal(a, b, c, d) -> (a + b + c + d) / 4.0  // 梯形分布均值 / Trapezoidal mean
-        | TrapezoidalPlateau(a, b, plateau) -> (a + b + 2.0 * plateau) / 4.0  // 平台梯形均值 / Plateau trapezoidal mean
+        | TrapezoidalPlateau(a, b, plateau) -> (a + b) / 2.0  // 平台梯形均值 / Plateau trapezoidal mean (symmetric)
         | UShape(min, max) -> (min + max) / 2.0  // U型分布均值 / U-shape distribution mean
         | Rayleigh(sigma) -> sigma * sqrt(MathHelpers.pi / 2.0)  // 瑞利分布均值 / Rayleigh distribution mean
         | LogNormal(mu, sigma) -> exp(mu + sigma * sigma / 2.0)  // 对数正态分布均值 / Log-normal mean
@@ -108,8 +108,19 @@ module metro =
         | Uniform(_, sigma) -> sigma  // 均匀分布标准差 / Uniform distribution std
         | Normal(a, b) -> (b - a) / 4.0  // 正态分布标准差 / Normal distribution std (95% coverage)
         | Triangular(min, mode, max) -> sqrt((min * min + mode * mode + max * max - min * mode - min * max - mode * max) / 6.0)  // 三角分布标准差 / Triangular std
-        | Trapezoidal(a, b, c, d) -> sqrt((a * a + b * b + c * c + d * d - a * b - a * c - a * d - b * c - b * d - c * d) / 24.0)  // 梯形分布标准差 / Trapezoidal std
-        | TrapezoidalPlateau(a, b, plateau) -> sqrt((a * a + b * b + 2.0 * plateau * plateau - a * b - 2.0 * a * plateau - 2.0 * b * plateau) / 24.0)  // 平台梯形标准差 / Plateau trapezoidal std
+        | Trapezoidal(a, b, c, d) ->  // 梯形分布标准差 / Trapezoidal std
+            // Correct formula for trapezoidal distribution variance
+            let mean_val = (a + b + c + d) / 4.0
+            let var = ((a - mean_val) ** 2.0 + (b - mean_val) ** 2.0 + (c - mean_val) ** 2.0 + (d - mean_val) ** 2.0 + 
+                      (a - mean_val) * (b - mean_val) + (b - mean_val) * (c - mean_val) + (c - mean_val) * (d - mean_val)) / 18.0
+            sqrt(abs(var))  // Use abs to avoid NaN from numerical errors
+        | TrapezoidalPlateau(a, b, plateau) ->  // 平台梯形标准差 / Plateau trapezoidal std
+            // For trapezoid with plateau length, variance calculation
+            let total_width = b - a
+            let slope_width = (total_width - plateau) / 2.0
+            // Variance for trapezoidal distribution with flat plateau
+            let var = (total_width * total_width - plateau * plateau) / 18.0
+            sqrt(abs(var))
         | UShape(min, max) -> (max - min) / (2.0 * sqrt(2.0))  // U型分布标准差 / U-shape distribution std
         | Rayleigh(sigma) -> sigma * sqrt(2.0 - MathHelpers.pi / 2.0)  // 瑞利分布标准差 / Rayleigh distribution std
         | LogNormal(mu, sigma) -> sqrt((exp(sigma * sigma) - 1.0) * exp(2.0 * mu + sigma * sigma))  // 对数正态分布标准差 / Log-normal std
@@ -146,15 +157,36 @@ module metro =
         | Trapezoidal(a, b, c, d) ->  // 梯形分布CDF / Trapezoidal distribution CDF
             if x < a then 0.0 
             elif x > d then 1.0 
-            elif x < b then (x - a) * (x - a) / ((b - a) * (c - a)) 
-            elif x < c then (x - a) / (d - a) 
-            else 1.0 - (d - x) * (d - x) / ((d - c) * (d - b))
+            elif x <= b then 
+                // Rising part: CDF = (x-a)² / ((b-a)(d+c-b-a))
+                (x - a) * (x - a) / ((b - a) * (d + c - b - a)) 
+            elif x <= c then 
+                // Flat part: CDF = (2x - a - b) / (d + c - b - a)
+                (2.0 * x - a - b) / (d + c - b - a)
+            else 
+                // Falling part: CDF = 1 - (d-x)² / ((d-c)(d+c-b-a))
+                1.0 - (d - x) * (d - x) / ((d - c) * (d + c - b - a))
         | TrapezoidalPlateau(a, b, plateau) ->  // 平台梯形分布CDF / Plateau trapezoidal CDF
             if x < a then 0.0 
             elif x > b then 1.0 
-            elif x < plateau then (x - a) * (x - a) / ((b - a) * (plateau - a)) 
-            elif x < b then 1.0 - (b - x) * (b - x) / ((b - plateau) * (b - a)) 
-            else 1.0
+            else
+                let total_width = b - a
+                let slope_width = (total_width - plateau) / 2.0  // Width of each slope
+                let left_slope_end = a + slope_width    // Where rising slope ends
+                let right_slope_start = b - slope_width // Where falling slope starts
+                let h = 2.0 / (total_width + plateau)   // Height
+                
+                if x <= left_slope_end then 
+                    // Rising part: CDF = integral of triangular rise
+                    h * (x - a) * (x - a) / (2.0 * slope_width)
+                elif x >= right_slope_start then 
+                    // Falling part: 1 - remaining triangular area
+                    1.0 - h * (b - x) * (b - x) / (2.0 * slope_width)
+                else 
+                    // Flat plateau region: area of triangle + area of rectangle
+                    let triangle_area = h * slope_width / 2.0
+                    let rect_width = x - left_slope_end
+                    triangle_area + h * rect_width
         | UShape(min, max) ->  // U型分布CDF / U-shape distribution CDF
             if x < min || x > max then (if x < min then 0.0 else 1.0) 
             else let u = (x - min) / (max - min) in (2.0 / MathHelpers.pi) * asin(sqrt(u))
@@ -196,14 +228,33 @@ module metro =
             else 2.0 * (max - x) / ((max - min) * (max - mode))
         | Trapezoidal(a, b, c, d) ->  // 梯形分布PDF / Trapezoidal distribution PDF
             if x < a || x > d then 0.0 
-            elif x < b then 2.0 * (x - a) / ((b - a) * (c - a)) 
-            elif x < c then 1.0 / (d - a) 
-            else 2.0 * (d - x) / ((d - c) * (d - b))
+            elif x <= b then 
+                // Rising part: PDF = 2(x-a) / ((b-a)(d+c-b-a))
+                2.0 * (x - a) / ((b - a) * (d + c - b - a))
+            elif x <= c then 
+                // Flat part: PDF = 2 / (d+c-b-a)
+                2.0 / (d + c - b - a)
+            else 
+                // Falling part: PDF = 2(d-x) / ((d-c)(d+c-b-a))
+                2.0 * (d - x) / ((d - c) * (d + c - b - a))
         | TrapezoidalPlateau(a, b, plateau) ->  // 平台梯形分布PDF / Plateau trapezoidal PDF
             if x < a || x > b then 0.0 
-            elif x < plateau then 2.0 * (x - a) / ((b - a) * (plateau - a)) 
-            elif x < b then 2.0 * (b - x) / ((b - plateau) * (b - a)) 
-            else 1.0 / (b - a)
+            else
+                let total_width = b - a
+                let slope_width = (total_width - plateau) / 2.0  // Width of each slope
+                let left_slope_end = a + slope_width    // Where rising slope ends
+                let right_slope_start = b - slope_width // Where falling slope starts
+                let h = 2.0 / (total_width + plateau)   // Height to normalize area to 1
+                
+                if x <= left_slope_end then 
+                    // Rising part: PDF = h * (x-a) / slope_width
+                    h * (x - a) / slope_width
+                elif x >= right_slope_start then 
+                    // Falling part: PDF = h * (b-x) / slope_width  
+                    h * (b - x) / slope_width
+                else 
+                    // Flat plateau: PDF = h
+                    h
         | UShape(min, max) ->  // U型分布PDF / U-shape distribution PDF
             if x < min || x > max then 0.0 
             else let u = (x - min) / (max - min) in 1.0 / (MathHelpers.pi * sqrt(u * (1.0 - u)) * (max - min))
@@ -262,26 +313,41 @@ module metro =
             else
                 max - sqrt((1.0 - p) * (max - min) * (max - mode))
         | Trapezoidal(a, b, c, d) ->  // 梯形分布逆CDF / Trapezoidal distribution inverse CDF
-            let p1 = (b - a) / (2.0 * (d - a))
-            let p2 = (c - a) / (d - a)
-            let p3 = 1.0 - (d - c) / (2.0 * (d - a))
+            let h = 2.0 / (d + c - b - a)  // Height of trapezoid
+            let area1 = (b - a) * h / 2.0  // Area of rising triangle
+            let area2 = (c - b) * h        // Area of flat rectangle
+            let p1 = area1
+            let p2 = area1 + area2
             if p <= p1 then
-                a + sqrt(2.0 * p * (b - a) * (c - a))
+                // Inverse of rising part
+                a + sqrt(p * (b - a) * (d + c - b - a))
             elif p <= p2 then
-                a + p * (d - a)
-            elif p <= p3 then
-                a + p * (d - a)
+                // Inverse of flat part
+                (p * (d + c - b - a) + a + b) / 2.0
             else
-                d - sqrt(2.0 * (1.0 - p) * (d - c) * (d - b))
+                // Inverse of falling part
+                d - sqrt((1.0 - p) * (d - c) * (d + c - b - a))
         | TrapezoidalPlateau(a, b, plateau) ->  // 平台梯形分布逆CDF / Plateau trapezoidal inverse CDF
-            let p1 = (plateau - a) / (2.0 * (b - a))
-            let p2 = 1.0 - (b - plateau) / (2.0 * (b - a))
+            let total_width = b - a
+            let slope_width = (total_width - plateau) / 2.0
+            let left_slope_end = a + slope_width
+            let right_slope_start = b - slope_width
+            let h = 2.0 / (total_width + plateau)
+            
+            let triangle_area = h * slope_width / 2.0
+            let plateau_area = h * plateau
+            let p1 = triangle_area
+            let p2 = triangle_area + plateau_area
+            
             if p <= p1 then
-                a + sqrt(2.0 * p * (b - a) * (plateau - a))
+                // Inverse of rising part
+                a + sqrt(2.0 * p * slope_width / h)
             elif p <= p2 then
-                plateau // 平台区域 / In the plateau region
+                // Inverse of flat part
+                left_slope_end + (p - p1) / h
             else
-                b - sqrt(2.0 * (1.0 - p) * (b - plateau) * (b - a))
+                // Inverse of falling part
+                b - sqrt(2.0 * (1.0 - p) * slope_width / h)
         | UShape(min, max) ->  // U型分布逆CDF / U-shape distribution inverse CDF
             let u = sin(p * MathHelpers.pi / 2.0) ** 2.0
             min + u * (max - min)
@@ -645,14 +711,7 @@ module metro =
                     d - sqrt(2.0 * (1.0 - u) * (d - c) * (d - b))
             | TrapezoidalPlateau(a, b, plateau) ->  // 平台梯形分布抽样 / Plateau trapezoidal sampling
                 let u = r.NextDouble()
-                let p1 = (plateau - a) / (2.0 * (b - a))
-                let p2 = 1.0 - (b - plateau) / (2.0 * (b - a))
-                if u <= p1 then
-                    a + sqrt(2.0 * u * (b - a) * (plateau - a))
-                elif u <= p2 then
-                    plateau // 在平台区域 / In the plateau region
-                else
-                    b - sqrt(2.0 * (1.0 - u) * (b - plateau) * (b - a))
+                invCdf (TrapezoidalPlateau(a, b, plateau)) u  // Use inverse CDF sampling
             | UShape(min, max) ->  // U型分布抽样 / U-shape distribution sampling
                 let u = r.NextDouble()
                 let v = sin(u * MathHelpers.pi / 2.0) ** 2.0
