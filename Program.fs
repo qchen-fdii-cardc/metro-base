@@ -5,6 +5,17 @@
 
 
 module metro =
+
+    // Array extension for standard deviation
+    type System.Array with
+        static member stdev (arr: float array) =
+            let n = float (Array.length arr)
+            if n = 0.0 then 0.0
+            else
+                let mean = Array.average arr
+                sqrt(Array.average (Array.map (fun x -> (x - mean) ** 2.0) arr))
+    
+
     type Distribution = 
         | Uniform of float * float
         | Normal of float * float
@@ -15,6 +26,7 @@ module metro =
         | Rayleigh of float // scale parameter σ
         | LogNormal of float * float // μ (log-scale mean), σ (log-scale std)
         | InvSine of float * float // min, max
+        | Sample of float array // empirical distribution from samples
 
     let mean dist =
         match dist with
@@ -27,6 +39,7 @@ module metro =
         | Rayleigh(sigma) -> sigma * sqrt(System.Math.PI / 2.0)
         | LogNormal(mu, sigma) -> exp(mu + sigma * sigma / 2.0)
         | InvSine(min, max) -> (min + max) / 2.0
+        | Sample(samples) -> Array.average samples
     
     let stdev dist =
         match dist with
@@ -39,6 +52,9 @@ module metro =
         | Rayleigh(sigma) -> sigma * sqrt(2.0 - System.Math.PI / 2.0)
         | LogNormal(mu, sigma) -> sqrt((exp(sigma * sigma) - 1.0) * exp(2.0 * mu + sigma * sigma))
         | InvSine(min, max) -> (max - min) / (2.0 * sqrt(2.0))
+        | Sample(samples) -> 
+            let mean = Array.average samples
+            sqrt(Array.average (Array.map (fun x -> (x - mean) ** 2.0) samples))
 
     let erf z =
         let t = 1.0 / (1.0 + 0.5 * abs z)
@@ -56,7 +72,12 @@ module metro =
         | Rayleigh(sigma) -> if x < 0.0 then 0.0 else 1.0 - exp(-x * x / (2.0 * sigma * sigma))
         | LogNormal(mu, sigma) -> if x <= 0.0 then 0.0 else let z = (log(x) - mu) / sigma in 0.5 * (1.0 + erf(z / sqrt(2.0)))
         | InvSine(min, max) -> if x < min || x > max then (if x < min then 0.0 else 1.0) else let u = (x - min) / (max - min) in (2.0 / System.Math.PI) * asin(sqrt(u))
-
+        | Sample(samples) -> 
+            let n = float (Array.length samples)
+            if n = 0.0 then failwith "Sample distribution has no samples"
+            else
+                let count = Array.filter (fun v -> v <= x) samples |> Array.length |> float
+                count / n
     let pdf dist x =
         match dist with
         | Uniform(mu, sigma) -> if x < mu - sqrt(3.0) * sigma || x > mu + sqrt(3.0) * sigma then 0.0 else 1.0 / (2.0 * sqrt(3.0) * sigma)
@@ -68,9 +89,17 @@ module metro =
         | Rayleigh(sigma) -> if x < 0.0 then 0.0 else (x / (sigma * sigma)) * exp(-x * x / (2.0 * sigma * sigma))
         | LogNormal(mu, sigma) -> if x <= 0.0 then 0.0 else (1.0 / (x * sigma * sqrt(2.0 * System.Math.PI))) * exp(-0.5 * ((log(x) - mu) / sigma) ** 2.0)
         | InvSine(min, max) -> if x < min || x > max then 0.0 else let u = (x - min) / (max - min) in 1.0 / (System.Math.PI * sqrt(u * (1.0 - u)) * (max - min))
-    
-    // Fast analytical inverse CDF for each distribution
-    let invCdfFast dist p =
+        | Sample(samples) -> 
+            let n = float (Array.length samples)
+            if n = 0.0 then failwith "Sample distribution has no samples"
+            else
+                let sampleStdev = sqrt(Array.average (Array.map (fun x -> let mean = Array.average samples in (x - mean) ** 2.0) samples))
+                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman's rule of thumb
+                let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
+                let density = Array.sum (Array.map (fun v -> kernel ((x - v) / bandwidth)) samples)
+                density / (n * bandwidth)
+    // Analytical inverse CDF for each distribution
+    let invCdf dist p =
         match dist with
         | Uniform(mu, sigma) -> 
             let a = mu - sqrt(3.0) * sigma
@@ -132,20 +161,21 @@ module metro =
         | InvSine(min, max) ->
             let u = sin(p * System.Math.PI / 2.0) ** 2.0
             min + u * (max - min)
-    
-    // Fallback binary search inverse CDF
-    let invCdf dist p =
-        let rec binarySearch low high =
-            if high - low < 1e-6 then (low + high) / 2.0
+        | Sample(samples) -> 
+            let n = float (Array.length samples)
+            if n = 0.0 then failwith "Sample distribution has no samples"
             else
-                let mid = (low + high) / 2.0
-                let cdfMid = cdf dist mid
-                if cdfMid < p then binarySearch mid high
-                else binarySearch low mid
-        binarySearch -1e6 1e6
-    
-    // Fast analytical inverse PDF for each distribution (where meaningful)
-    let invPdfFast dist p =
+                let sortedSamples = Array.sort samples
+                let rank = p * (n - 1.0)
+                let lowerIndex = int (floor rank)
+                let upperIndex = int (ceil rank)
+                if lowerIndex = upperIndex then
+                    sortedSamples.[lowerIndex]
+                else
+                    let weight = rank - float lowerIndex
+                    sortedSamples.[lowerIndex] * (1.0 - weight) + sortedSamples.[upperIndex] * weight
+    // Analytical inverse PDF for each distribution (where meaningful)
+    let invPdf dist p =
         match dist with
         | Uniform(mu, sigma) -> 
             let pdfValue = 1.0 / (2.0 * sqrt(3.0) * sigma)
@@ -172,8 +202,61 @@ module metro =
                 else
                     // For descending part: p = 2(max-x)/((max-min)(max-mode))
                     max - p * (max - min) * (max - mode) / 2.0
+        | Rayleigh(sigma) ->
+            if p <= 0.0 then failwith "PDF value must be positive for Rayleigh distribution"
+            else
+                // Solve: p = (x/σ²) * exp(-x²/(2σ²))
+                // This requires numerical methods for general case, using Newton-Raphson
+                let rec solve x_guess iter =
+                    if iter > 20 then x_guess
+                    else
+                        let pdf_val = (x_guess / (sigma * sigma)) * exp(-x_guess * x_guess / (2.0 * sigma * sigma))
+                        let pdf_deriv = (1.0 / (sigma * sigma)) * exp(-x_guess * x_guess / (2.0 * sigma * sigma)) * (1.0 - x_guess * x_guess / (sigma * sigma))
+                        let x_new = x_guess - (pdf_val - p) / pdf_deriv
+                        if abs(x_new - x_guess) < 1e-10 then x_new
+                        else solve x_new (iter + 1)
+                solve sigma 0
+        | LogNormal(mu, sigma) ->
+            if p <= 0.0 then failwith "PDF value must be positive for LogNormal distribution"
+            else
+                // For log-normal, the mode occurs at exp(μ - σ²)
+                let mode = exp(mu - sigma * sigma)
+                let maxPdf = 1.0 / (mode * sigma * sqrt(2.0 * System.Math.PI))
+                if p > maxPdf then failwith "PDF value too high for LogNormal distribution"
+                elif abs(p - maxPdf) < 1e-10 then mode
+                else
+                    // Use Newton-Raphson for general inverse
+                    let rec solve x_guess iter =
+                        if iter > 20 || x_guess <= 0.0 then max x_guess 1e-10
+                        else
+                            let pdf_val = (1.0 / (x_guess * sigma * sqrt(2.0 * System.Math.PI))) * exp(-0.5 * ((log(x_guess) - mu) / sigma) ** 2.0)
+                            let log_x = log(x_guess)
+                            let z = (log_x - mu) / sigma
+                            let pdf_deriv = -(1.0 / (x_guess * x_guess * sigma * sqrt(2.0 * System.Math.PI))) * exp(-0.5 * z * z) * (1.0 + z * z)
+                            let x_new = x_guess - (pdf_val - p) / pdf_deriv
+                            if abs(x_new - x_guess) < 1e-10 then x_new
+                            else solve x_new (iter + 1)
+                    solve mode 0
+        | Sample(samples) ->
+            // For empirical distributions, use kernel density estimation to find approximate inverse
+            let n = float (Array.length samples)
+            if n = 0.0 then failwith "Sample distribution has no samples"
+            else
+                let sampleStdev = sqrt(Array.average (Array.map (fun x -> let mean = Array.average samples in (x - mean) ** 2.0) samples))
+                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman's rule of thumb
+                let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
+                let rec binarySearch low high =
+                    if high - low < 1e-6 then (low + high) / 2.0
+                    else
+                        let mid = (low + high) / 2.0
+                        let density = Array.sum (Array.map (fun v -> kernel ((mid - v) / bandwidth)) samples) / (n * bandwidth)
+                        if density < p then binarySearch mid high
+                        else binarySearch low mid
+                let minSample = Array.min samples
+                let maxSample = Array.max samples
+                binarySearch (minSample - 3.0 * bandwidth) (maxSample + 3.0 * bandwidth)
         | _ -> 
-            // For more complex distributions, fall back to binary search
+            // For other distributions, use binary search as fallback
             let rec binarySearch low high =
                 if high - low < 1e-6 then (low + high) / 2.0
                 else
@@ -187,35 +270,13 @@ module metro =
                         else binarySearch mid high
             let m = mean dist
             let s = stdev dist
-            binarySearch (m - 3.0 * s) (m + 3.0 * s)
-
-    // Fallback binary search inverse PDF
-    // Note: invPdf finds x where pdf(x) = p, which may not always be meaningful
-    // for all distributions and probability values
-    let invPdf dist p =
-        let rec binarySearch low high =
-            if high - low < 1e-6 then (low + high) / 2.0
-            else
-                let mid = (low + high) / 2.0
-                let pdfMid = pdf dist mid
-                if pdfMid < p then 
-                    // PDF too small, need to move towards the mode
-                    if mid < (mean dist) then binarySearch mid high
-                    else binarySearch low mid
-                else 
-                    // PDF too large, need to move away from the mode
-                    if mid < (mean dist) then binarySearch low mid
-                    else binarySearch mid high
-        // Start search around the mean of the distribution
-        let m = mean dist
-        let s = stdev dist
-        binarySearch (m - 3.0 * s) (m + 3.0 * s) 
+            binarySearch (m - 3.0 * s) (m + 3.0 * s) 
 
 
     /// Returns the expanded uncertainty for a given level of confidence p
     let expandedUncertainty dist p =
         let centeredPercentile = (1.0 + p) / 2.0 // For centered coverage interval
-        let upperQuantile = invCdfFast dist centeredPercentile
+        let upperQuantile = invCdf dist centeredPercentile
         let distMean = mean dist
         let distStdev = stdev dist
         abs(upperQuantile - distMean)
@@ -233,6 +294,176 @@ module metro =
         (lower, upper)
 
 
+    type Value = 
+        | Exact of float
+        | Distribution of Distribution
+        | Addition of Value * Value
+        | Bias of Value * float
+        | Multiplication of Value * Value
+        | Division of Value * Value
+        | Power of Value * float
+        | Min of Value * Value
+        | Max of Value * Value
+        | Abs of Value
+        | Sqrt of Value
+        | Ln of Value
+        | Exp of Value
+        | Sin of Value
+        | Cos of Value
+        | Tan of Value
+        | ASin of Value
+        | ACos of Value
+        | ATan of Value
+        | ATan2 of Value * Value
+        | Sinh of Value
+        | Cosh of Value
+        | Tanh of Value
+        | Floor of Value
+        | Ceil of Value
+        | Round of Value
+        | Log10 of Value
+        | Log2 of Value
+        | Log of Value * float // log base
+        | PowerOf10 of Value
+
+    let add v1 v2 = Addition(v1, v2)
+    let multiply v1 v2 = Multiplication(v1, v2)
+    let divide v1 v2 = Division(v1, v2)
+    let power v p = Power(v, p)
+    let minVal v1 v2 = Min(v1, v2)
+    let maxVal v1 v2 = Max(v1, v2)
+    let absVal v = Abs v
+    let sqrtVal v = Sqrt v
+    let lnVal v = Ln v
+    let expVal v = Exp v
+    let sinVal v = Sin v
+    let cosVal v = Cos v
+    let tanVal v = Tan v
+    let asinVal v = ASin v
+    let acosVal v = ACos v
+    let atanVal v = ATan v
+    let atan2Val v1 v2 = ATan2(v1, v2)
+    let sinhVal v = Sinh v
+    let coshVal v = Cosh v
+    let tanhVal v = Tanh v
+    let floorVal v = Floor v
+    let ceilVal v = Ceil v
+    let roundVal v = Round v
+    let log10Val v = Log10 v
+    let log2Val v = Log2 v
+    let logVal v b = Log(v, b)
+    let powerOf10Val v = PowerOf10 v
+    let sum values = List.reduce add values
+    let product values = List.reduce multiply values
+    let average values = divide (sum values) (Exact (float (List.length values)))
+    let meanValue values = average values
+    let square v = power v 2.0
+    let cube v = power v 3.0
+
+    let rec sample (r: System.Random) value =
+        match value with
+        | Exact v -> v 
+        | Distribution dist -> 
+            match dist with
+            | Uniform(mu, sigma) -> 
+                let a = mu - sqrt(3.0) * sigma
+                let b = mu + sqrt(3.0) * sigma
+                let u = r.NextDouble()
+                a + u * (b - a)
+            | Normal(a, b) -> 
+                let mu = (a + b) / 2.0
+                let sigma = (b - a) / 4.0
+                // Box-Muller transform
+                let u1 = r.NextDouble()
+                let u2 = r.NextDouble()
+                mu + sigma * sqrt(-2.0 * log(u1)) * cos(2.0 * System.Math.PI * u2)
+            | Triangular(min, mode, max) ->
+                let u = r.NextDouble()
+                let fc = (mode - min) / (max - min)
+                if u < fc then
+                    min + sqrt(u * (max - min) * (mode - min))
+                else
+                    max - sqrt((1.0 - u) * (max - min) * (max - mode))
+            | Trapezoidal(a, b, c, d) ->
+                let u = r.NextDouble()
+                let p1 = (b - a) / (2.0 * (d - a))
+                let p2 = (c - a) / (d - a)
+                let p3 = 1.0 - (d - c) / (2.0 * (d - a))
+                if u <= p1 then
+                    a + sqrt(2.0 * u * (b - a) * (c - a))
+                elif u <= p2 then
+                    a + u * (d - a)
+                elif u <= p3 then
+                    a + u * (d - a)
+                else
+                    d - sqrt(2.0 * (1.0 - u) * (d - c) * (d - b))
+            | TrapezoidalPlateau(a, b, plateau) ->
+                let u = r.NextDouble()
+                let p1 = (plateau - a) / (2.0 * (b - a))
+                let p2 = 1.0 - (b - plateau) / (2.0 * (b - a))
+                if u <= p1 then
+                    a + sqrt(2.0 * u * (b - a) * (plateau - a))
+                elif u <= p2 then
+                    plateau // In the plateau region
+                else
+                    b - sqrt(2.0 * (1.0 - u) * (b - plateau) * (b - a))
+            | UShape(min, max) ->
+                let u = r.NextDouble()
+                let v = sin(u * System.Math.PI / 2.0) ** 2
+                min + v * (max - min)
+            | Rayleigh(sigma) ->
+                let u = r.NextDouble()
+                sigma * sqrt(-2.0 * log(1.0 - u))
+            | LogNormal(mu, sigma) ->
+                let u1 = r.NextDouble()
+                let u2 = r.NextDouble()
+                let z = sqrt(-2.0 * log(u1)) * cos(2.0 * System.Math.PI * u2)
+                exp(mu + sigma * z)
+            | InvSine(min, max) ->
+                let u = r.NextDouble()
+                let v = sin(u * System.Math.PI / 2.0) ** 2
+                min + v * (max - min)
+            | Sample(samples) -> 
+                if samples.Length = 0 then failwith "Sample distribution has no samples"
+                else
+                    let index = r.Next(0, samples.Length)
+                    samples.[index]
+        | Addition(v1, v2) -> sample r v1 + sample r v2
+        | Bias(v, b) -> sample r v + b
+        | Multiplication(v1, v2) -> sample r v1 * sample r v2
+        | Division(v1, v2) -> sample r v1 / sample r v2
+        | Power(v, p) -> (sample r v) ** p
+        | Min(v1, v2) -> min (sample r v1) (sample r v2)
+        | Max(v1, v2) -> max (sample r v1) (sample r v2)
+        | Abs v -> abs (sample r v)
+        | Sqrt v -> sqrt (sample r v)
+        | Ln v -> log (sample r v)
+        | Exp v -> exp (sample r v)
+        | Sin v -> sin (sample r v)
+        | Cos v -> cos (sample r v)
+        | Tan v -> tan (sample r v)
+        | ASin v -> asin (sample r v)
+        | ACos v -> acos (sample r v)
+        | ATan v -> atan (sample r v)
+        | ATan2(v1, v2) -> atan2 (sample r v1) (sample r v2)
+        | Sinh v -> sinh (sample r v)
+        | Cosh v -> cosh (sample r v)
+        | Tanh v -> tanh (sample r v)
+        | Floor v -> floor (sample r v)
+        | Ceil v -> ceil (sample r v)
+        | Round v -> round (sample r v)
+        | Log10 v -> log10 (sample r v)
+        | Log2 v -> log (sample r v) / log 2.0
+        | Log(v, b) -> log (sample r v) / log b
+        | PowerOf10 v -> 10.0 ** (sample r v)   
+
+    let eval value numSamples =
+        let r = System.Random()
+        let samples = Array.init numSamples (fun _ -> sample r value)
+        Sample(samples)
+
+
+
 [<EntryPoint>]
 let main argv =
     printfn "Hello World from F#!"
@@ -241,24 +472,57 @@ let main argv =
     printfn "\n=== NORMAL DISTRIBUTION ==="
     let normalDist = metro.Normal(0.0, 10.0)
     printfn "Mean: %f, Stdev: %f" (metro.mean normalDist) (metro.stdev normalDist)
-    printfn "InvCDF Fast(0.95): %f" (metro.invCdfFast normalDist 0.95)
-    printfn "InvCDF Slow(0.95): %f" (metro.invCdf normalDist 0.95)
+    printfn "InvCDF(0.95): %f" (metro.invCdf normalDist 0.95)
     printfn "Kp(0.95): %f" (metro.kp normalDist 0.95)
     
     // Test Uniform distribution
     printfn "\n=== UNIFORM DISTRIBUTION ==="
     let uniformDist = metro.Uniform(5.0, 2.0)
     printfn "Mean: %f, Stdev: %f" (metro.mean uniformDist) (metro.stdev uniformDist)
-    printfn "InvCDF Fast(0.95): %f" (metro.invCdfFast uniformDist 0.95)
-    printfn "InvCDF Slow(0.95): %f" (metro.invCdf uniformDist 0.95)
+    printfn "InvCDF(0.95): %f" (metro.invCdf uniformDist 0.95)
     printfn "Kp(0.95): %f" (metro.kp uniformDist 0.95)
     
-    // Test Triangular distribution
-    printfn "\n=== TRIANGULAR DISTRIBUTION ==="
-    let triangularDist = metro.Triangular(2.0, 5.0, 8.0)
-    printfn "Mean: %f, Stdev: %f" (metro.mean triangularDist) (metro.stdev triangularDist)
-    printfn "InvCDF Fast(0.95): %f" (metro.invCdfFast triangularDist 0.95)
-    printfn "InvCDF Slow(0.95): %f" (metro.invCdf triangularDist 0.95)
-    printfn "Kp(0.95): %f" (metro.kp triangularDist 0.95)
+    // Test U-Shape distribution
+    printfn "\n=== U-SHAPE DISTRIBUTION ==="
+    let ushapeDist = metro.UShape(2.0, 8.0)
+    printfn "Mean: %f, Stdev: %f" (metro.mean ushapeDist) (metro.stdev ushapeDist)
+    printfn "InvCDF(0.95): %f" (metro.invCdf ushapeDist 0.95)
+    printfn "Kp(0.95): %f" (metro.kp ushapeDist 0.95)
+    
+    // Test Rayleigh distribution
+    printfn "\n=== RAYLEIGH DISTRIBUTION ==="
+    let rayleighDist = metro.Rayleigh(2.0)
+    printfn "Mean: %f, Stdev: %f" (metro.mean rayleighDist) (metro.stdev rayleighDist)
+    printfn "InvCDF(0.95): %f" (metro.invCdf rayleighDist 0.95)
+    printfn "Kp(0.95): %f" (metro.kp rayleighDist 0.95)
+    
+    // Test LogNormal distribution
+    printfn "\n=== LOG-NORMAL DISTRIBUTION ==="
+    let logNormalDist = metro.LogNormal(1.0, 0.5)
+    printfn "Mean: %f, Stdev: %f" (metro.mean logNormalDist) (metro.stdev logNormalDist)
+    printfn "InvCDF(0.95): %f" (metro.invCdf logNormalDist 0.95)
+    printfn "Kp(0.95): %f" (metro.kp logNormalDist 0.95)
+    
+    // Test InvSine distribution
+    printfn "\n=== INVERSE SINE DISTRIBUTION ==="
+    let invSineDist = metro.InvSine(1.0, 5.0)
+    printfn "Mean: %f, Stdev: %f" (metro.mean invSineDist) (metro.stdev invSineDist)
+    printfn "InvCDF(0.95): %f" (metro.invCdf invSineDist 0.95)
+    printfn "Kp(0.95): %f" (metro.kp invSineDist 0.95)
+
+
+    let v1 = metro.Distribution(metro.Normal(10.0, 2.0))
+    let v2 = metro.Distribution(metro.Uniform(5.0, 1.0))
+    let v3 = metro.add v1 v2
+    let v4 = metro.multiply v1 v2
+    let v5 = metro.divide v1 v2
+    let v6 = metro.power v1 2.0
+
+    let result = metro.eval v6 100000
+    printfn "\n=== MONTE CARLO SIMULATION ==="
+    printfn "Mean: %f, Stdev: %f" (metro.mean result) (metro.stdev result)
+    printfn "InvCDF(0.95): %f" (metro.invCdf result 0.95)
+    printfn "Kp(0.95): %f" (metro.kp result 0.95)
+    printfn "Expanded Uncertainty (95%%): %f" (metro.expandedUncertainty result 0.95)
 
     0 // Return 0 for success
