@@ -3,15 +3,27 @@
 namespace metro_base
 module metro =
 
-    // Array extension for standard deviation
-    type System.Array with
-        static member stdev (arr: float array) =
-            let n = float (Array.length arr)
-            if n = 0.0 then 0.0
-            else
-                let mean = Array.average arr
-                sqrt(Array.average (Array.map (fun x -> (x - mean) ** 2.0) arr))
-    
+    type BootstrapSamples = struct
+        val NumSamples: int
+        val Samples: float array
+        val SampledArray : float array
+        new(numSamples: int, samples: float array) = 
+            let rand = System.Random()
+            let sampledArray = Array.zeroCreate<float> numSamples
+            for i in 0 .. numSamples - 1 do
+                sampledArray.[i] <- samples.[rand.Next(samples.Length)]            
+            { NumSamples = numSamples; Samples = samples; SampledArray =  sampledArray}
+
+        member this.Sample() =
+            this.SampledArray
+        member this.Mean() =
+            Array.average (this.Sample())
+        member this.Stdev() =
+            let sampled = this.Sample()
+            let mean = this.Mean()
+            sqrt(Array.average (Array.map (fun x -> (x - mean) ** 2.0) sampled))
+        
+    end
 
     type Distribution = 
         | Uniform of float * float
@@ -24,6 +36,7 @@ module metro =
         | LogNormal of float * float // μ (log-scale mean), σ (log-scale std)
         | InvSine of float * float // min, max
         | Sample of float array // empirical distribution from samples
+        | Bootstrap of int * float array // empirical distribution from bootstrap samples
 
     let mean dist =
         match dist with
@@ -37,6 +50,9 @@ module metro =
         | LogNormal(mu, sigma) -> exp(mu + sigma * sigma / 2.0)
         | InvSine(min, max) -> (min + max) / 2.0
         | Sample(samples) -> Array.average samples
+        | Bootstrap(n, samples) -> 
+            let bs = BootstrapSamples(n, samples)
+            bs.Mean()
     
     let stdev dist =
         match dist with
@@ -52,6 +68,11 @@ module metro =
         | Sample(samples) -> 
             let mean = Array.average samples
             sqrt(Array.average (Array.map (fun x -> (x - mean) ** 2.0) samples))
+
+        | Bootstrap(n, samples) -> 
+            let bs = BootstrapSamples(n, samples)
+            bs.Stdev()
+        
 
     let erf z =
         let t = 1.0 / (1.0 + 0.5 * abs z)
@@ -75,6 +96,11 @@ module metro =
             else
                 let count = Array.filter (fun v -> v <= x) samples |> Array.length |> float
                 count / n
+        | Bootstrap(n, samples) ->
+            let bs = BootstrapSamples(n, samples)
+            let sampled = bs.Sample()
+            let count = Array.filter (fun v -> v <= x) sampled |> Array.length |> float
+            count / float n
     let pdf dist x =
         match dist with
         | Uniform(mu, sigma) -> if x < mu - sqrt(3.0) * sigma || x > mu + sqrt(3.0) * sigma then 0.0 else 1.0 / (2.0 * sqrt(3.0) * sigma)
@@ -95,6 +121,15 @@ module metro =
                 let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
                 let density = Array.sum (Array.map (fun v -> kernel ((x - v) / bandwidth)) samples)
                 density / (n * bandwidth)
+
+        | Bootstrap(n, samples) ->
+            let bs = BootstrapSamples(n, samples)
+            let sampled = bs.Sample()
+            let sampleStdev = sqrt(Array.average (Array.map (fun x -> let mean = Array.average sampled in (x - mean) ** 2.0) sampled))
+            let bandwidth = 1.06 * sampleStdev * (float n ** (-1.0 / 5.0)) // Silverman's rule of thumb
+            let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
+            let density = Array.sum (Array.map (fun v -> kernel ((x - v) / bandwidth)) sampled)
+            density / (float n * bandwidth)
     // Analytical inverse CDF for each distribution
     let invCdf dist p =
         match dist with
@@ -171,6 +206,23 @@ module metro =
                 else
                     let weight = rank - float lowerIndex
                     sortedSamples.[lowerIndex] * (1.0 - weight) + sortedSamples.[upperIndex] * weight
+
+        | Bootstrap(n, samples) ->
+            let bs = BootstrapSamples(n, samples)
+            let sampled = bs.Sample()
+            let n = float (Array.length sampled)
+            if n = 0.0 then failwith "Bootstrap distribution has no samples"
+            else
+                let sortedSamples = Array.sort sampled
+                let rank = p * (n - 1.0)
+                let lowerIndex = int (floor rank)
+                let upperIndex = int (ceil rank)
+                if lowerIndex = upperIndex then
+                    sortedSamples.[lowerIndex]
+                else
+                    let weight = rank - float lowerIndex
+                    sortedSamples.[lowerIndex] * (1.0 - weight) + sortedSamples.[upperIndex] * weight
+
     // Analytical inverse PDF for each distribution (where meaningful)
     let invPdf dist p =
         match dist with
@@ -251,6 +303,25 @@ module metro =
                         else binarySearch low mid
                 let minSample = Array.min samples
                 let maxSample = Array.max samples
+                binarySearch (minSample - 3.0 * bandwidth) (maxSample + 3.0 * bandwidth)
+        | Bootstrap(n, samples) ->
+            let bs = BootstrapSamples(n, samples)
+            let sampled = bs.Sample()
+            let n = float (Array.length sampled)
+            if n = 0.0 then failwith "Bootstrap distribution has no samples"    
+            else
+                let sampleStdev = sqrt(Array.average (Array.map (fun x -> let mean = Array.average sampled in (x - mean) ** 2.0) sampled))
+                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman's rule of thumb
+                let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
+                let rec binarySearch low high =
+                    if high - low < 1e-6 then (low + high) / 2.0
+                    else
+                        let mid = (low + high) / 2.0
+                        let density = Array.sum (Array.map (fun v -> kernel ((mid - v) / bandwidth)) sampled) / (n * bandwidth)
+                        if density < p then binarySearch mid high
+                        else binarySearch low mid
+                let minSample = Array.min sampled
+                let maxSample = Array.max sampled
                 binarySearch (minSample - 3.0 * bandwidth) (maxSample + 3.0 * bandwidth)
         | _ -> 
             // For other distributions, use binary search as fallback
@@ -350,12 +421,35 @@ module metro =
     let log2Val v = Log2 v
     let logVal v b = Log(v, b)
     let powerOf10Val v = PowerOf10 v
-    let sum values = List.reduce add values
-    let product values = List.reduce multiply values
-    let average values = divide (sum values) (Exact (float (List.length values)))
+
+    // Operator overloads for Value type
+    type Value with
+        static member (+) (v1: Value, v2: Value) = Addition(v1, v2)
+        static member (+) (v: Value, f: float) = Addition(v, Exact(f))
+        static member (+) (f: float, v: Value) = Addition(Exact(f), v)
+        
+        static member (-) (v1: Value, v2: Value) = Addition(v1, Multiplication(Exact(-1.0), v2))
+        static member (-) (v: Value, f: float) = Addition(v, Exact(-f))
+        static member (-) (f: float, v: Value) = Addition(Exact(f), Multiplication(Exact(-1.0), v))
+        
+        static member (*) (v1: Value, v2: Value) = Multiplication(v1, v2)
+        static member (*) (v: Value, f: float) = Multiplication(v, Exact(f))
+        static member (*) (f: float, v: Value) = Multiplication(Exact(f), v)
+        
+        static member (/) (v1: Value, v2: Value) = Division(v1, v2)
+        static member (/) (v: Value, f: float) = Division(v, Exact(f))
+        static member (/) (f: float, v: Value) = Division(Exact(f), v)
+        
+        static member Pow (v: Value, p: float) = Power(v, p)
+        static member (~-) (v: Value) = Multiplication(Exact(-1.0), v)
+
+    let sum values = List.reduce (+) values
+    let product values = List.reduce (*) values
+    let average values = (sum values) / (Exact (float (List.length values)))
     let meanValue values = average values
-    let square v = power v 2.0
-    let cube v = power v 3.0
+    let square v = v * v
+    let cube v = v * v * v
+    let pow v p = Power(v, p)  // Helper function for power operations
 
     let rec sample (r: System.Random) value =
         match value with
@@ -425,6 +519,14 @@ module metro =
                 else
                     let index = r.Next(0, samples.Length)
                     samples.[index]
+
+            | Bootstrap(n, samples) -> 
+                if samples.Length = 0 then failwith "Bootstrap distribution has no samples"
+                else
+                    let bs = BootstrapSamples(n, samples)
+                    let sampled = bs.Sample()
+                    let index = r.Next(0, sampled.Length)
+                    sampled.[index]
         | Addition(v1, v2) -> sample r v1 + sample r v2
         | Bias(v, b) -> sample r v + b
         | Multiplication(v1, v2) -> sample r v1 * sample r v2
@@ -459,3 +561,6 @@ module metro =
         let samples = Array.init numSamples (fun _ -> sample r value)
         Sample(samples)
 
+    type Value with
+        member this.Eval(numSamples: int) =
+            eval this numSamples

@@ -1,65 +1,102 @@
 ﻿
 open System
-open metro_base
+open metro_base.metro
 [<EntryPoint>]
 let main argv =
     printfn "Hello World from F#!"
     
     // Test Normal distribution
     printfn "\n=== NORMAL DISTRIBUTION ==="
-    let normalDist = metro.Normal(0.0, 10.0)
-    printfn "Mean: %f, Stdev: %f" (metro.mean normalDist) (metro.stdev normalDist)
-    printfn "InvCDF(0.95): %f" (metro.invCdf normalDist 0.95)
-    printfn "Kp(0.95): %f" (metro.kp normalDist 0.95)
-    
+    let normalDist = Normal(0.0, 10.0)
+    printfn "Mean: %f, Stdev: %f" (mean normalDist) (stdev normalDist)
+    printfn "InvCDF(0.95): %f" (invCdf normalDist 0.95)
+    printfn "Kp(0.95): %f" (kp normalDist 0.95)
+
     // Test Uniform distribution
     printfn "\n=== UNIFORM DISTRIBUTION ==="
-    let uniformDist = metro.Uniform(5.0, 2.0)
-    printfn "Mean: %f, Stdev: %f" (metro.mean uniformDist) (metro.stdev uniformDist)
-    printfn "InvCDF(0.95): %f" (metro.invCdf uniformDist 0.95)
-    printfn "Kp(0.95): %f" (metro.kp uniformDist 0.95)
-    
+    let uniformDist = Uniform(5.0, 2.0)
+    printfn "Mean: %f, Stdev: %f" (mean uniformDist) (stdev uniformDist)
+    printfn "InvCDF(0.95): %f" (invCdf uniformDist 0.95)
+    printfn "Kp(0.95): %f" (kp uniformDist 0.95)
+
     // Test U-Shape distribution
     printfn "\n=== U-SHAPE DISTRIBUTION ==="
-    let ushapeDist = metro.UShape(2.0, 8.0)
-    printfn "Mean: %f, Stdev: %f" (metro.mean ushapeDist) (metro.stdev ushapeDist)
-    printfn "InvCDF(0.95): %f" (metro.invCdf ushapeDist 0.95)
-    printfn "Kp(0.95): %f" (metro.kp ushapeDist 0.95)
+    let ushapeDist = UShape(2.0, 8.0)
+    printfn "Mean: %f, Stdev: %f" (mean ushapeDist) (stdev ushapeDist)
+    printfn "InvCDF(0.95): %f" (invCdf ushapeDist 0.95)
+    printfn "Kp(0.95): %f" (kp ushapeDist 0.95)
     
     // Test Rayleigh distribution
     printfn "\n=== RAYLEIGH DISTRIBUTION ==="
-    let rayleighDist = metro.Rayleigh(2.0)
-    printfn "Mean: %f, Stdev: %f" (metro.mean rayleighDist) (metro.stdev rayleighDist)
-    printfn "InvCDF(0.95): %f" (metro.invCdf rayleighDist 0.95)
-    printfn "Kp(0.95): %f" (metro.kp rayleighDist 0.95)
+    let rayleighDist = Rayleigh(2.0)
+    printfn "Mean: %f, Stdev: %f" (mean rayleighDist) (stdev rayleighDist)
+    printfn "InvCDF(0.95): %f" (invCdf rayleighDist 0.95)
+    printfn "Kp(0.95): %f" (kp rayleighDist 0.95)
     
     // Test LogNormal distribution
     printfn "\n=== LOG-NORMAL DISTRIBUTION ==="
-    let logNormalDist = metro.LogNormal(1.0, 0.5)
-    printfn "Mean: %f, Stdev: %f" (metro.mean logNormalDist) (metro.stdev logNormalDist)
-    printfn "InvCDF(0.95): %f" (metro.invCdf logNormalDist 0.95)
-    printfn "Kp(0.95): %f" (metro.kp logNormalDist 0.95)
+    let logNormalDist = LogNormal(1.0, 0.5)
+    printfn "Mean: %f, Stdev: %f" (mean logNormalDist) (stdev logNormalDist)
+    printfn "InvCDF(0.95): %f" (invCdf logNormalDist 0.95)
+    printfn "Kp(0.95): %f" (kp logNormalDist 0.95)
     
     // Test InvSine distribution
     printfn "\n=== INVERSE SINE DISTRIBUTION ==="
-    let invSineDist = metro.InvSine(1.0, 5.0)
-    printfn "Mean: %f, Stdev: %f" (metro.mean invSineDist) (metro.stdev invSineDist)
-    printfn "InvCDF(0.95): %f" (metro.invCdf invSineDist 0.95)
-    printfn "Kp(0.95): %f" (metro.kp invSineDist 0.95)
+    let invSineDist = InvSine(1.0, 5.0)
+    printfn "Mean: %f, Stdev: %f" (mean invSineDist) (stdev invSineDist)
+    printfn "InvCDF(0.95): %f" (invCdf invSineDist 0.95)
+    printfn "Kp(0.95): %f" (kp invSineDist 0.95)
 
 
-    let v1 = metro.Distribution(metro.Normal(10.0, 2.0))
-    let v2 = metro.Distribution(metro.Uniform(5.0, 1.0))
-    let v3 = metro.add v1 v2
-    let v4 = metro.multiply v1 v2
-    let v5 = metro.divide v1 v2
-    let v6 = metro.power v1 2.0
+    let v1 = Distribution(Normal(10.0, 2.0))
+    let v2 = Distribution(Uniform(5.0, 1.0))
+    
+    // Using overloaded operators instead of function calls
+    let v3 = v1 + v2        // Addition
+    let v4 = v1 * v2        // Multiplication
+    let v5 = v1 / v2        // Division
+    let v6 = v1 * v1        // Power (square)
+    let v7 = v1 - v2        // Subtraction
+    let v8 = -v1            // Negation
+    let v9 = v1 + 5.0       // Mixed with float
+    let v10 = 2.0 * v1      // Float multiplication
+    let v11 = v10 ** 2.0 // Power with float exponent
 
-    let result = metro.eval v6 100000
-    printfn "\n=== MONTE CARLO SIMULATION ==="
-    printfn "Mean: %f, Stdev: %f" (metro.mean result) (metro.stdev result)
-    printfn "InvCDF(0.95): %f" (metro.invCdf result 0.95)
-    printfn "Kp(0.95): %f" (metro.kp result 0.95)
-    printfn "Expanded Uncertainty (95%%): %f" (metro.expandedUncertainty result 0.95)
+    let result = eval v11 100000
+    printfn "\n=== MONTE CARLO SIMULATION (with operators) ==="
+    // compare mean Value and mean (sample value n)
+    printfn "Mean: %f" (mean result)
+    printfn "Stdev: %f" (stdev result)
+    printfn "Kp(0.95): %f" (kp result 0.95)
+    printfn "Expanded Uncertainty (95%%): %f" (expandedUncertainty result 0.95)
+
+    // a long expression
+    let complexExpr = ((v1 + v2) * (v1 - v2) / v2 + 3.0) ** 2.0 - (v1 * v2 + 4.0)
+    let result = eval complexExpr 100000
+    printfn "\n=== MONTE CARLO SIMULATION (complex expression) ==="
+    // compare mean Value and mean (sample value n)
+    printfn "Mean: %f" (mean result)
+    printfn "Stdev: %f" (stdev result)
+    printfn "Kp(0.95): %f" (kp result 0.95)
+    printfn "Expanded Uncertainty (95%%): %f" (expandedUncertainty result 0.95)
+
+    // sin of a uniform distribution -> inv sine distribution
+    let v12 = Distribution(Uniform(0.0, Math.PI / 2.0))
+    let v13 = sinVal v12
+    let result = eval v13 100000
+    printfn "\n=== MONTE CARLO SIMULATION (sin of uniform) ==="
+    // compare mean Value and mean (sample value n)
+    printfn "Mean: %f" (mean result)
+    printfn "Stdev: %f" (stdev result)
+    printfn "Kp(1.0): %f" (kp result 1.0)
+    printfn "Expanded Uncertainty (95%%): %f" (expandedUncertainty result 0.95)
+
+
+    let v14 = Distribution(InvSine(0.0, 1.0)).Eval 100000
+    printfn "\n=== INVERSE SINE DISTRIBUTION DIRECTLY ==="
+    printfn "Mean: %f, Stdev: %f" (mean v14) (stdev v14)
+    printfn "Kp(0.95): %f" (kp v14 0.95)
+    printfn "Kp(1.0): %f" (kp v14 1.0)
+    printfn "Expanded Uncertainty (95%%): %f" (expandedUncertainty v14 0.95)
 
     0 // Return 0 for success
