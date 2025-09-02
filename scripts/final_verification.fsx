@@ -1,4 +1,12 @@
-#r "/home/qchen/metro-base/bin/Debug/net8.0/metro-base.dll"
+#!/usr/bin/env fsx
+// This script should be run from the project root: dotnet fsi scripts/final_verification.fsx
+
+// Build the project first
+let buildProcess = System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+buildProcess.WaitForExit()
+
+// Reference the built DLL (relative to project root)
+#r "../bin/Debug/net8.0/metro-base.dll"
 open metro_base.metro
 
 printfn "=== Final Verification of Corrected Distributions ==="

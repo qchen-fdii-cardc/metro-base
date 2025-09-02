@@ -1,4 +1,12 @@
-#r "/home/qchen/metro-base/bin/Debug/net8.0/metro-base.dll"
+#!/usr/bin/env fsx
+// This script should be run from the project root: dotnet fsi scripts/test_corrected_trapezoidalplateau.fsx
+
+// Build the project first (relative to project root)
+let buildProcess = System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+buildProcess.WaitForExit()
+
+// Reference the built DLL (relative to project root)
+#r "../bin/Debug/net8.0/metro-base.dll"
 open System
 open metro_base.metro
 

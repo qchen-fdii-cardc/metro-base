@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This script should be run from the project root: python3 scripts/plot_distributions.py
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys

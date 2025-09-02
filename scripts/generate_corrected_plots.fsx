@@ -1,6 +1,18 @@
-#r "/home/qchen/metro-base/bin/Debug/net8.0/metro-base.dll"
+#!/usr/bin/env fsx
 open System.IO
+
+// Build the project first
+let buildProcess = System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+buildProcess.WaitForExit()
+
+// Reference the built DLL
+#r "bin/Debug/net8.0/metro-base.dll"
 open metro_base.metro
+
+// Ensure imgs directory exists
+let imgsDir = "imgs"
+if not (Directory.Exists(imgsDir)) then
+    Directory.CreateDirectory(imgsDir) |> ignore
 
 // Generate visualization data for the corrected trapezoidal distributions
 let distributions = [
@@ -25,10 +37,11 @@ let createCsvData() =
     |> String.concat "\n"
 
 let csvData = createCsvData()
-File.WriteAllText("/home/qchen/metro-base/corrected_trapezoidal_plots.csv", csvData)
+let csvPath = Path.Combine(imgsDir, "corrected_trapezoidal_plots.csv")
+File.WriteAllText(csvPath, csvData)
 
 // Generate Python plotting script
-let pythonScript = """
+let pythonScript = """#!/usr/bin/env python3
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -39,8 +52,8 @@ import os
 plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'SimHei', 'Arial Unicode MS']
 plt.rcParams['axes.unicode_minus'] = False
 
-# Read the data
-df = pd.read_csv('corrected_trapezoidal_plots.csv')
+# Read the data from imgs directory
+df = pd.read_csv('imgs/corrected_trapezoidal_plots.csv')
 
 # Create the plot
 fig, ax = plt.subplots(figsize=(12, 8))
@@ -57,7 +70,7 @@ for i, col in enumerate(df.columns[1:]):  # Skip 'x' column
 # Formatting
 ax.set_xlabel('x', fontsize=12)
 ax.set_ylabel('PDF', fontsize=12)
-ax.set_title('Corrected Trapezoidal Distributions Comparison\n修正后的梯形分布对比', fontsize=14)
+ax.set_title('Corrected Trapezoidal Distributions Comparison\\n修正后的梯形分布对比', fontsize=14)
 ax.grid(True, alpha=0.3)
 ax.legend(fontsize=11)
 
@@ -66,17 +79,17 @@ ax.set_ylim(0, max(df.iloc[:, 1:].max()) * 1.1)
 
 # Add annotations for key parameters
 ax.text(0.02, 0.98, 
-        'Trapezoidal(a=2, b=3, c=5, d=8)\nTrapezoidalPlateau(a=2, b=8, plateau=3)\nplateau = length of flat section\n高原 = 平坦段长度', 
+        'Trapezoidal(a=2, b=3, c=5, d=8)\\nTrapezoidalPlateau(a=2, b=8, plateau=3)\\nplateau = length of flat section\\n高原 = 平坦段长度', 
         transform=ax.transAxes, fontsize=10,
         verticalalignment='top',
         bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
 plt.tight_layout()
-plt.savefig('corrected_trapezoidal_distributions.png', dpi=300, bbox_inches='tight')
-print("Plot saved as: corrected_trapezoidal_distributions.png")
+plt.savefig('imgs/corrected_trapezoidal_distributions.png', dpi=300, bbox_inches='tight')
+print("Plot saved as: imgs/corrected_trapezoidal_distributions.png")
 
 # Show parameter details
-print("\nParameter Analysis:")
+print("\\nParameter Analysis:")
 print("Trapezoidal(2,3,5,8): Traditional 4-parameter form")
 print("  - Rising: 2→3, Flat: 3→5, Falling: 5→8")
 print("TrapezoidalPlateau(2,8,3): 3-parameter form (CORRECTED)")
@@ -86,9 +99,13 @@ print("  - Slope widths: (6-3)/2 = 1.5 each")
 print("  - Rising: 2→3.5, Flat: 3.5→6.5, Falling: 6.5→8")
 """
 
-File.WriteAllText("/home/qchen/metro-base/plot_corrected_trapezoidal.py", pythonScript)
+let pythonScriptPath = Path.Combine(imgsDir, "plot_corrected_trapezoidal.py")
+File.WriteAllText(pythonScriptPath, pythonScript)
 
 printfn "Generated corrected trapezoidal distributions data and plotting script"
 printfn "Files created:"
-printfn "  - corrected_trapezoidal_plots.csv"
-printfn "  - plot_corrected_trapezoidal.py"
+printfn "  - %s" csvPath
+printfn "  - %s" pythonScriptPath
+printfn ""
+printfn "To generate the plot, run from project root:"
+printfn "  python3 %s" pythonScriptPath
