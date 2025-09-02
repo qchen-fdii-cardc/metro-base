@@ -99,4 +99,25 @@ let main argv =
     printfn "Kp(1.0): %f" (kp v14 1.0)
     printfn "Expanded Uncertainty (95%%): %f" (expandedUncertainty v14 0.95)
 
+    // Test Bootstrap distribution
+    printfn "\n=== BOOTSTRAP DISTRIBUTION ==="
+    let sampleData = [| 5.0; 7.0; 9.0; 11.0; 13.0 |]
+    printfn "Sample Data: %A" sampleData
+    printfn "Sample Size: %d" (Array.length sampleData)
+    printfn "Mean of Sample Data: %f" (Array.average sampleData)
+    printfn "stdev of Sample Data: %f" (sqrt (Array.sumBy (fun x -> (x - Array.average sampleData) ** 2.0) sampleData / float (Array.length sampleData - 1)))
+    
+    printfn "\nBootstrap with 1000 samples:"
+    let bootstrapDist = Bootstrap(1000, sampleData)
+    printfn "Mean: %f, Stdev: %f" (mean bootstrapDist) (stdev bootstrapDist)
+    printfn "InvCDF(0.95): %f" (invCdf bootstrapDist 0.95)
+    printfn "Kp(0.95): %f" (kp bootstrapDist 0.95)
+    printfn "Expanded Uncertainty (95%%): %f" (expandedUncertainty bootstrapDist 0.95)
+
+    printfn "\nBootstrap with 10000 samples:"
+    let bootstrapDist = Bootstrap(10000, sampleData)
+    printfn "Mean: %f, Stdev: %f" (mean bootstrapDist) (stdev bootstrapDist)
+    printfn "InvCDF(0.95): %f" (invCdf bootstrapDist 0.95)
+    printfn "Kp(0.95): %f" (kp bootstrapDist 0.95)
+    printfn "Expanded Uncertainty (95%%): %f" (expandedUncertainty bootstrapDist 0.95)
     0 // Return 0 for success
