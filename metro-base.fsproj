@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- <OutputType>Exe</OutputType> -->
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>metro_base</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Program.fs" />
+    <Compile Include="metro_base.fs" />
+    <!-- <Compile Include="Program.fs" /> -->
   </ItemGroup>
 
 </Project>
