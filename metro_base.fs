@@ -1,4 +1,5 @@
-// For more information see https://aka.ms/fsharp-console-apps
+// F# 统计计量学库 - 支持多种概率分布和不确定度分析
+// F# Statistical Metrology Library - Supporting multiple probability distributions and uncertainty analysis
 
 namespace metro_base
 module metro =
@@ -37,6 +38,7 @@ module metro =
         | InvSine of float * float // min, max
         | Sample of float array // empirical distribution from samples
         | Bootstrap of int * float array // empirical distribution from bootstrap samples
+        | BootstrapSamples of BootstrapSamples
 
     let mean dist =
         match dist with
@@ -52,6 +54,8 @@ module metro =
         | Sample(samples) -> Array.average samples
         | Bootstrap(n, samples) -> 
             let bs = BootstrapSamples(n, samples)
+            bs.Mean()
+        | BootstrapSamples(bs) ->
             bs.Mean()
     
     let stdev dist =
@@ -71,6 +75,8 @@ module metro =
 
         | Bootstrap(n, samples) -> 
             let bs = BootstrapSamples(n, samples)
+            bs.Stdev()
+        | BootstrapSamples(bs) ->
             bs.Stdev()
         
 
@@ -101,6 +107,10 @@ module metro =
             let sampled = bs.Sample()
             let count = Array.filter (fun v -> v <= x) sampled |> Array.length |> float
             count / float n
+        | BootstrapSamples(bs) ->
+            let sampled = bs.Sample()
+            let count = Array.filter (fun v -> v <= x) sampled |> Array.length |> float
+            count / float bs.NumSamples
     let pdf dist x =
         match dist with
         | Uniform(mu, sigma) -> if x < mu - sqrt(3.0) * sigma || x > mu + sqrt(3.0) * sigma then 0.0 else 1.0 / (2.0 * sqrt(3.0) * sigma)
@@ -121,7 +131,6 @@ module metro =
                 let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
                 let density = Array.sum (Array.map (fun v -> kernel ((x - v) / bandwidth)) samples)
                 density / (n * bandwidth)
-
         | Bootstrap(n, samples) ->
             let bs = BootstrapSamples(n, samples)
             let sampled = bs.Sample()
@@ -130,6 +139,16 @@ module metro =
             let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
             let density = Array.sum (Array.map (fun v -> kernel ((x - v) / bandwidth)) sampled)
             density / (float n * bandwidth)
+        | BootstrapSamples(bs) ->
+            let sampled = bs.Sample()
+            let n = float (Array.length sampled)
+            if n = 0.0 then failwith "Bootstrap distribution has no samples"
+            else
+                let sampleStdev = sqrt(Array.average (Array.map (fun x -> let mean = Array.average sampled in (x - mean) ** 2.0) sampled))
+                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman's rule of thumb
+                let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
+                let density = Array.sum (Array.map (fun v -> kernel ((x - v) / bandwidth)) sampled)
+                density / (n * bandwidth)
     // Analytical inverse CDF for each distribution
     let invCdf dist p =
         match dist with
@@ -222,7 +241,20 @@ module metro =
                 else
                     let weight = rank - float lowerIndex
                     sortedSamples.[lowerIndex] * (1.0 - weight) + sortedSamples.[upperIndex] * weight
-
+        | BootstrapSamples(bs) ->
+            let sampled = bs.Sample()
+            let n = float (Array.length sampled)
+            if n = 0.0 then failwith "Bootstrap distribution has no samples"
+            else
+                let sortedSamples = Array.sort sampled
+                let rank = p * (n - 1.0)
+                let lowerIndex = int (floor rank)
+                let upperIndex = int (ceil rank)
+                if lowerIndex = upperIndex then
+                    sortedSamples.[lowerIndex]
+                else
+                    let weight = rank - float lowerIndex
+                    sortedSamples.[lowerIndex] * (1.0 - weight) + sortedSamples.[upperIndex] * weight
     // Analytical inverse PDF for each distribution (where meaningful)
     let invPdf dist p =
         match dist with
@@ -313,6 +345,26 @@ module metro =
                 let sampleStdev = sqrt(Array.average (Array.map (fun x -> let mean = Array.average sampled in (x - mean) ** 2.0) sampled))
                 let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman's rule of thumb
                 let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
+                let rec binarySearch low high =
+                    if high - low < 1e-6 then (low + high) / 2.0
+                    else
+                        let mid = (low + high) / 2.0
+                        let density = Array.sum (Array.map (fun v -> kernel ((mid - v) / bandwidth)) sampled) / (n * bandwidth)
+                        if density < p then binarySearch mid high
+                        else binarySearch low mid
+                let minSample = Array.min sampled
+                let maxSample = Array.max sampled
+                binarySearch (minSample - 3.0 * bandwidth) (maxSample + 3.0 * bandwidth)
+        | BootstrapSamples(bs) ->
+            let sampled = bs.Sample()
+            let n = float (Array.length sampled)
+            if n = 0.0 then failwith "Bootstrap distribution has no samples"    
+            else
+                let sampleStdev = sqrt(Array.average (Array.map (fun x -> let mean = Array.average sampled in (x - mean) ** 2.0) sampled))
+                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman's rule of thumb
+                let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
+                // Use binary search to find x such that pdf(dist, x) = p
+                // This is a numerical method since analytical inverse PDF is not available for empirical distributions
                 let rec binarySearch low high =
                     if high - low < 1e-6 then (low + high) / 2.0
                     else
