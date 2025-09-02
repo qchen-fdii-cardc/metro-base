@@ -10,7 +10,7 @@ plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'SimHei', 'Arial Unicode MS']
 plt.rcParams['axes.unicode_minus'] = False
 
 # Read the data
-df = pd.read_csv('corrected_trapezoidal_plots.csv')
+df = pd.read_csv('./imgs/corrected_trapezoidal_plots.csv')
 
 # Create the plot
 fig, ax = plt.subplots(figsize=(12, 8))
@@ -27,7 +27,7 @@ for i, col in enumerate(df.columns[1:]):  # Skip 'x' column
 # Formatting
 ax.set_xlabel('x', fontsize=12)
 ax.set_ylabel('PDF', fontsize=12)
-ax.set_title('Corrected Trapezoidal Distributions Comparison\n修正后的梯形分布对比', fontsize=14)
+ax.set_title('Corrected Trapezoidal Distributions Comparison', fontsize=14)
 ax.grid(True, alpha=0.3)
 ax.legend(fontsize=11)
 
@@ -36,13 +36,13 @@ ax.set_ylim(0, max(df.iloc[:, 1:].max()) * 1.1)
 
 # Add annotations for key parameters
 ax.text(0.02, 0.98, 
-        'Trapezoidal(a=2, b=3, c=5, d=8)\nTrapezoidalPlateau(a=2, b=8, plateau=3)\nplateau = length of flat section\n高原 = 平坦段长度', 
+        'Trapezoidal(a=2, b=3, c=5, d=8)\nTrapezoidalPlateau(a=2, b=8, plateau=3)\nplateau = length of flat section', 
         transform=ax.transAxes, fontsize=10,
         verticalalignment='top',
         bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
 plt.tight_layout()
-plt.savefig('corrected_trapezoidal_distributions.png', dpi=300, bbox_inches='tight')
+plt.savefig('./imgs/corrected_trapezoidal_distributions.png', dpi=300, bbox_inches='tight')
 print("Plot saved as: corrected_trapezoidal_distributions.png")
 
 # Show parameter details

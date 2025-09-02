@@ -19,7 +19,7 @@ Metro-Base 是一个专为统计计量学应用设计的综合性 F# 库，提�
 
 ## 主要特性
 
-- **9种概率分布**：支持正态、均匀、三角、梯形、U形、瑞利、对数正态、反正弦和经验（基于样本）分布
+- **10种概率分布**：支持正态、均匀、三角、传统梯形、平台梯形、U形、瑞利、对数正态、反正弦和经验（基于样本）分布
 - **解析逆函数**：逆累积分布函数（CDF）和概率密度函数（PDF）计算的快速闭式解
 - **自举采样**：用于经验分布分析的先进重采样方法
 - **运算符重载**：使用 `+`、`-`、`*`、`/` 运算符的自然数学语法
@@ -90,10 +90,53 @@ $$f(x) = \begin{cases}
 
 ### 4. 梯形分布
 
-**参数**：`Trapezoidal(a, b, c, d)` 其中 $a \leq b \leq c \leq d$  
-**均值**：$\mu = \frac{a + b + c + d}{4}$  
+该库提供两种梯形分布的实现形式：
 
-**应用**：工程公差、具有平坦区域的测量范围
+#### 4.1 传统梯形分布
+**参数**：`Trapezoidal(a, b, c, d)` 其中 $a \leq b \leq c \leq d$  
+- `a`：分布的最小值（左端点）
+- `b`：平坦区域的左端点  
+- `c`：平坦区域的右端点
+- `d`：分布的最大值（右端点）
+
+**均值**：$\mu = \frac{a + b + c + d}{4}$  
+**方差**：$\sigma^2 = \frac{1}{18}[(d-a)^2 + (c-b)^2 + (d-a)(c-b)]$
+
+**概率密度函数**：
+$$f(x) = \begin{cases}
+\frac{2(x-a)}{(d-a+c-b)(b-a)} & \text{对于 } a \leq x \leq b \\
+\frac{2}{d-a+c-b} & \text{对于 } b \leq x \leq c \\
+\frac{2(d-x)}{(d-a+c-b)(d-c)} & \text{对于 } c \leq x \leq d
+\end{cases}$$
+
+#### 4.2 平台梯形分布
+**参数**：`TrapezoidalPlateau(a, b, plateau)` 其中：
+- `a`：分布的最小值
+- `b`：分布的最大值  
+- `plateau`：中央平坦区域的长度（非位置）
+
+**参数关系**：
+- 总宽度：$w = b - a$
+- 边坡宽度：$w_{\text{slope}} = \frac{w - \text{plateau}}{2}$
+- 上升区间：$[a, a + w_{\text{slope}}]$  
+- 平坦区间：$[a + w_{\text{slope}}, b - w_{\text{slope}}]$
+- 下降区间：$[b - w_{\text{slope}}, b]$
+
+**均值**：$\mu = \frac{a + b}{2}$（对称分布）  
+**标准差**：$\sigma = \sqrt{\frac{(b-a)^2 - \text{plateau}^2}{12}}$
+
+**概率密度函数**：
+$$f(x) = \begin{cases}
+\frac{2(x-a)}{w_{\text{slope}} \cdot w} & \text{对于上升区间} \\
+\frac{2}{w} & \text{对于平坦区间} \\
+\frac{2(b-x)}{w_{\text{slope}} \cdot w} & \text{对于下降区间}
+\end{cases}$$
+
+**应用**：
+- 工程公差分析
+- 具有已知平坦区域长度的测量范围
+- 质量控制中的规格限制
+- 计量学中的矩形和三角不确定度的组合
 
 ### 5. U形分布（反正弦分布）
 
@@ -257,10 +300,13 @@ open metro_base.metro
 // 创建分布
 let normalDist = Normal(0.0, 10.0)
 let uniformDist = Uniform(5.0, 2.0)
+let trapDist = Trapezoidal(2.0, 3.0, 5.0, 8.0)          // 传统4参数梯形
+let trapPlateau = TrapezoidalPlateau(2.0, 8.0, 3.0)     // 平台梯形，高原长度=3
 
 // 计算统计属性
 let meanVal = mean normalDist        // 5.0
 let stdevVal = stdev normalDist      // 2.5
+let trapMean = mean trapPlateau      // 5.0 (对称分布)
 
 // 计算覆盖因子
 let k95 = kp normalDist 0.95         // ~1.96
