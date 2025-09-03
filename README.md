@@ -64,13 +64,13 @@ $$\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$$
 
 参数：`Normal(a, b)` 其中 `a` 和 `b` 定义 95% 置信区间。
 
-均值： $\mu = \frac{a + b}{2}$。
+均值：  $\mu = \frac{a + b}{2}$。
 
-标准差： $\sigma = \frac{b - a}{4}$。
+标准差：  $\sigma = \frac{b - a}{4}$。
 
-概率密度函数：$f(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left(-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2\right)$。
+概率密度函数： $f(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left(-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2\right)$。
 
-累积分布函数：$F(x) = \frac{1}{2}\left(1 + \text{erf}\left(\frac{x-\mu}{\sigma\sqrt{2}}\right)\right)$。
+累积分布函数： $F(x) = \frac{1}{2}\left(1 + \text{erf}\left(\frac{x-\mu}{\sigma\sqrt{2}}\right)\right)$。
 
 应用：测量不确定度、校准误差、自然现象。
 
@@ -78,13 +78,13 @@ $$\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$$
 
 参数：`Uniform(μ, σ)` 其中 μ 是均值，σ 是标准差。
 
-支撑：$[\mu - \sqrt{3}\sigma, \mu + \sqrt{3}\sigma]$。
+支撑： $[\mu - \sqrt{3}\sigma, \mu + \sqrt{3}\sigma]$。
 
-均值：$\mu$。
+均值： $\mu$。
 
-标准差：$\sigma$。
+标准差： $\sigma$。
 
-概率密度函数：$f(x) = \frac{1}{2\sqrt{3}\sigma}$ 对于 $x \in [a,b]$，否则为 0。
+概率密度函数： $f(x) = \frac{1}{2\sqrt{3}\sigma}$ 对于 $x \in [a,b]$，否则为 0。
 
 累积分布函数：$F(x) = \frac{x - a}{b - a}$ 对于 $x \in [a,b]$。
 
@@ -94,15 +94,17 @@ $$\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$$
 
 参数：`Triangular(min, mode, max)`。
 
-均值：$\mu = \frac{\text{min} + \text{mode} + \text{max}}{3}$。
+均值： $\mu = \frac{\text{min} + \text{mode} + \text{max}}{3}$。
 
-方差：$\sigma^2 = \frac{\text{min}^2 + \text{mode}^2 + \text{max}^2 - \text{min} \cdot \text{mode} - \text{min} \cdot \text{max} - \text{mode} \cdot \text{max}}{18}$。
+方差： $\sigma^2 = \frac{\text{min}^2 + \text{mode}^2 + \text{max}^2 - \text{min} \cdot \text{mode} - \text{min} \cdot \text{max} - \text{mode} \cdot \text{max}}{18}$。
 
 概率密度函数：
+
 $$f(x) = \begin{cases}
 \frac{2(x-\text{min})}{(\text{max}-\text{min})(\text{mode}-\text{min})} & \text{对于 } \text{min} \leq x \leq \text{mode} \\
 \frac{2(\text{max}-x)}{(\text{max}-\text{min})(\text{max}-\text{mode})} & \text{对于 } \text{mode} < x \leq \text{max}
-\end{cases}$$
+\end{cases}
+$$
 
 参考文献：Evans, M.; Hastings, N.; and Peacock, B. "Triangular Distribution." Ch. 40 in Statistical Distributions, 3rd ed. New York: Wiley, pp. 187-188, 2000.
 
@@ -124,16 +126,18 @@ c 表示平坦区域的右端点。
 
 d 表示分布的最大值（右端点）。
 
-均值：$\mu = \frac{a + b + c + d}{4}$。
+均值： $\mu = \frac{a + b + c + d}{4}$。
 
-方差：$\sigma^2 = \frac{1}{18}[(d-a)^2 + (c-b)^2 + (d-a)(c-b)]$。
+方差： $\sigma^2 = \frac{1}{18}[(d-a)^2 + (c-b)^2 + (d-a)(c-b)]$。
 
 概率密度函数：
+
 $$f(x) = \begin{cases}
 \frac{2(x-a)}{(d-a+c-b)(b-a)} & \text{对于 } a \leq x \leq b \\
 \frac{2}{d-a+c-b} & \text{对于 } b \leq x \leq c \\
 \frac{2(d-x)}{(d-a+c-b)(d-c)} & \text{对于 } c \leq x \leq d
-\end{cases}$$
+\end{cases}
+$$
 
 #### 4.2 平台梯形分布
 
@@ -147,26 +151,29 @@ plateau 表示中央平坦区域的长度（非位置）。
 
 参数关系说明如下。
 
-总宽度：$w = b - a$。
+总宽度： $w = b - a$。
 
-边坡宽度：$w_{\text{slope}} = \frac{w - \text{plateau}}{2}$。
+边坡宽度： $w_{\text{slope}} = \frac{w - \text{plateau}}{2}$。
 
-上升区间：$[a, a + w_{\text{slope}}]$。
+上升区间： $[a, a + w_{\text{slope}}]$。
 
-平坦区间：$[a + w_{\text{slope}}, b - w_{\text{slope}}]$。
+平坦区间： $[a + w_{\text{slope}}, b - w_{\text{slope}}]$。
 
-下降区间：$[b - w_{\text{slope}}, b]$。
+下降区间： $[b - w_{\text{slope}}, b]$。
 
-均值：$\mu = \frac{a + b}{2}$（对称分布）。
+均值： $\mu = \frac{a + b}{2}$（对称分布）。
 
-标准差：$\sigma = \sqrt{\frac{(b-a)^2 - \text{plateau}^2}{12}}$。
+标准差： $\sigma = \sqrt{\frac{(b-a)^2 - \text{plateau}^2}{12}}$。
 
 概率密度函数：
-$$f(x) = \begin{cases}
+
+$$
+f(x) = \begin{cases}
 \frac{2(x-a)}{w_{\text{slope}} \cdot w} & \text{对于上升区间} \\
 \frac{2}{w} & \text{对于平坦区间} \\
 \frac{2(b-x)}{w_{\text{slope}} \cdot w} & \text{对于下降区间}
-\end{cases}$$
+\end{cases}
+$$
 
 应用包括工程公差分析、具有已知平坦区域长度的测量范围、质量控制中的规格限制、计量学中的矩形和三角不确定度的组合。
 
@@ -174,13 +181,13 @@ $$f(x) = \begin{cases}
 
 参数：`UShape(min, max)`。
 
-均值：$\mu = \frac{\text{min} + \text{max}}{2}$。
+均值： $\mu = \frac{\text{min} + \text{max}}{2}$。
 
-标准差：$\sigma = \frac{\text{max} - \text{min}}{2\sqrt{2}}$。
+标准差： $\sigma = \frac{\text{max} - \text{min}}{2\sqrt{2}}$。
 
-概率密度函数：$f(x) = \frac{1}{\pi\sqrt{u(1-u)(\text{max}-\text{min})}}$ ，其中 $u = \frac{x-\text{min}}{\text{max}-\text{min}}$ 。
+概率密度函数： $f(x) = \frac{1}{\pi\sqrt{u(1-u)(\text{max}-\text{min})}}$ ，其中  $u = \frac{x-\text{min}}{\text{max}-\text{min}}$ 。
 
-累积分布函数：$F(x) = \frac{2}{\pi}\arcsin(\sqrt{u})$。
+累积分布函数： $F(x) = \frac{2}{\pi}\arcsin(\sqrt{u})$。
 
 应用：振荡现象、极值场景。
 
@@ -188,13 +195,13 @@ $$f(x) = \begin{cases}
 
 参数：`Rayleigh(σ)` 其中 σ 是尺度参数。
 
-均值：$\mu = \sigma\sqrt{\frac{\pi}{2}}$。
+均值： $\mu = \sigma\sqrt{\frac{\pi}{2}}$。
 
-标准差：$\sigma_{\text{std}} = \sigma\sqrt{2 - \frac{\pi}{2}}$。
+标准差： $\sigma_{\text{std}} = \sigma\sqrt{2 - \frac{\pi}{2}}$。
 
-概率密度函数：$f(x) = \frac{x}{\sigma^2}\exp\left(-\frac{x^2}{2\sigma^2}\right)$ 对于 $x \geq 0$。
+概率密度函数： $f(x) = \frac{x}{\sigma^2}\exp\left(-\frac{x^2}{2\sigma^2}\right)$ 对于 $x \geq 0$。
 
-累积分布函数：$F(x) = 1 - \exp\left(-\frac{x^2}{2\sigma^2}\right)$。
+累积分布函数： $F(x) = 1 - \exp\left(-\frac{x^2}{2\sigma^2}\right)$。
 
 应用：风速建模、波高分析、可靠性工程。
 
@@ -206,11 +213,11 @@ $$f(x) = \begin{cases}
 
 参数：`LogNormal(μ, σ)` 其中 μ 和 σ 是对数尺度参数。
 
-均值：$E[X] = \exp\left(\mu + \frac{\sigma^2}{2}\right)$。
+均值： $E[X] = \exp\left(\mu + \frac{\sigma^2}{2}\right)$。
 
-方差：$\text{Var}[X] = (\exp(\sigma^2) - 1)\exp(2\mu + \sigma^2)$。
+方差： $\text{Var}[X] = (\exp(\sigma^2) - 1)\exp(2\mu + \sigma^2)$。
 
-概率密度函数：$f(x) = \frac{1}{x\sigma\sqrt{2\pi}}\exp\left(-\frac{1}{2}\left(\frac{\ln(x)-\mu}{\sigma}\right)^2\right)$ 对于 $x > 0$。
+概率密度函数： $f(x) = \frac{1}{x\sigma\sqrt{2\pi}}\exp\left(-\frac{1}{2}\left(\frac{\ln(x)-\mu}{\sigma}\right)^2\right)$ 对于 $x > 0$。
 
 应用：金融建模、粒度分布、环境数据。
 
