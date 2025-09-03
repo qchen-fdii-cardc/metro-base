@@ -9,3 +9,5 @@
 *.exe
 *.dll
 **/imgs/*
+**/.idea/*
+global.json

@@ -7,7 +7,7 @@ let buildProcess = System.Diagnostics.Process.Start("dotnet", "build metro-base.
 buildProcess.WaitForExit()
 
 // Reference the built DLL
-#r "bin/Debug/net8.0/metro-base.dll"
+#r "../bin/Debug/net8.0/metro-base.dll"
 open metro_base.metro
 
 // Ensure imgs directory exists

@@ -28,8 +28,9 @@ def plot_csv(csv_file, title):
 if __name__ == "__main__":
     # Plot all CSV files in imgs directory
     img_dir = "imgs"
-    if os.path.exists(img_dir):
+    if os.path.exists(img_dir):        
         for file in os.listdir(img_dir):
+            print(f"Processing {file}...")
             if file.endswith('.csv'):
                 csv_path = os.path.join(img_dir, file)
                 title = file.replace('.csv', '').replace('_', ' ').title()
