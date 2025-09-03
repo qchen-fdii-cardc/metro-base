@@ -178,7 +178,7 @@ $$f(x) = \begin{cases}
 
 标准差：$\sigma = \frac{\text{max} - \text{min}}{2\sqrt{2}}$。
 
-概率密度函数：$f(x) = \frac{1}{\pi\sqrt{u(1-u)(\text{max}-\text{min})}}$，其中 $u = \frac{x-\text{min}}{\text{max}-\text{min}}$。
+概率密度函数：$f(x) = \frac{1}{\pi\sqrt{u(1-u)(\text{max}-\text{min})}}$ ，其中 $u = \frac{x-\text{min}}{\text{max}-\text{min}}$ 。
 
 累积分布函数：$F(x) = \frac{2}{\pi}\arcsin(\sqrt{u})$。
 
