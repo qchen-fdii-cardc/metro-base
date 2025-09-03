@@ -64,9 +64,9 @@ $$\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$$
 
 参数：`Normal(a, b)` 其中 `a` 和 `b` 定义 95% 置信区间。
 
-均值：$\mu = \frac{a + b}{2}$。
+均值： $\mu = \frac{a + b}{2}$。
 
-标准差：$\sigma = \frac{b - a}{4}$。
+标准差： $\sigma = \frac{b - a}{4}$。
 
 概率密度函数：$f(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left(-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2\right)$。
 
