@@ -10,22 +10,33 @@ Metro-Base 是一个专为统计计量学应用设计的综合性 F# 库，提�
 
 ### 代码优化特性
 
-- **模块化设计**：通过 `MathHelpers` 模块提取公共数学函数，避免代码重复
-- **统一数学常数**：使用统一的 π 常数定义，提高代码一致性
-- **优化的逆误差函数**：单一实现的高精度逆误差函数，支持所有需要的分布
-- **简化的 Bootstrap 处理**：统一的 Bootstrap 采样逻辑，减少代码冗余
-- **全面的中文注释**：每个函数和重要代码段都提供中英文对照注释
-- **改进的错误处理**：更清晰的错误消息和边界条件处理
+模块化设计：通过 `MathHelpers` 模块提取公共数学函数，避免代码重复。
+
+统一数学常数：使用统一的 π 常数定义，提高代码一致性。
+
+优化的逆误差函数：单一实现的高精度逆误差函数，支持所有需要的分布。
+
+简化的 Bootstrap 处理：统一的 Bootstrap 采样逻辑，减少代码冗余。
+
+全面的中文注释：每个函数和重要代码段都提供中英文对照注释。
+
+改进的错误处理：更清晰的错误消息和边界条件处理。
 
 ## 主要特性
 
-- **10种概率分布**：支持正态、均匀、三角、传统梯形、平台梯形、U形、瑞利、对数正态、反正弦和经验（基于样本）分布
-- **解析逆函数**：逆累积分布函数（CDF）和概率密度函数（PDF）计算的快速闭式解
-- **自举采样**：用于经验分布分析的先进重采样方法
-- **运算符重载**：使用 `+`、`-`、`*`、`/` 运算符的自然数学语法
-- **覆盖因子**：自动计算计量学覆盖因子（k因子）
-- **蒙特卡洛仿真**：高效的不确定度采样和传播
-- **扩展不确定度**：符合 ISO GUM 的不确定度计算
+支持 10 种概率分布：正态、均匀、三角、传统梯形、平台梯形、U 形、瑞利、对数正态、反正弦和经验（基于样本）分布。
+
+解析逆函数：提供逆累积分布函数（CDF）和概率密度函数（PDF）计算的快速闭式解。
+
+自举采样：用于经验分布分析的先进重采样方法。
+
+运算符重载：使用 `+`、`-`、`*`、`/` 运算符的自然数学语法。
+
+覆盖因子：自动计算计量学覆盖因子（k 因子）。
+
+蒙特卡洛仿真：高效的不确定度采样和传播。
+
+扩展不确定度：符合 ISO GUM 的不确定度计算。
 
 ## 数学基础
 
@@ -40,69 +51,84 @@ let erf z =
     if z >= 0.0 then 1.0 - tau else tau - 1.0
 ```
 
-**数学定义**：误差函数定义为：
+数学定义：误差函数定义为：
 $$\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$$
 
-**参考文献**：Abramowitz, M. and Stegun, I. A. "Error Function and Fresnel Integrals." Ch. 7 in *Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables*, 9th printing. New York: Dover, pp. 297-309, 1972.
+参考文献：Abramowitz, M. and Stegun, I. A. "Error Function and Fresnel Integrals." Ch. 7 in Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables, 9th printing. New York: Dover, pp. 297-309, 1972.
 
-**在线参考**：[MathWorld - Error Function](https://mathworld.wolfram.com/Erf.html)
+在线参考：[MathWorld - Error Function](https://mathworld.wolfram.com/Erf.html)
 
 ## 支持的分布
 
 ### 1. 正态分布
 
-**参数**：`Normal(a, b)` 其中 `a` 和 `b` 定义 95% 置信区间  
-**均值**：$\mu = \frac{a + b}{2}$  
-**标准差**：$\sigma = \frac{b - a}{4}$  
+参数：`Normal(a, b)` 其中 `a` 和 `b` 定义 95% 置信区间。
 
-**概率密度函数**：$f(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left(-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2\right)$  
-**累积分布函数**：$F(x) = \frac{1}{2}\left(1 + \text{erf}\left(\frac{x-\mu}{\sigma\sqrt{2}}\right)\right)$  
+均值：$\mu = \frac{a + b}{2}$。
 
-**应用**：测量不确定度、校准误差、自然现象
+标准差：$\sigma = \frac{b - a}{4}$。
+
+概率密度函数：$f(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left(-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2\right)$。
+
+累积分布函数：$F(x) = \frac{1}{2}\left(1 + \text{erf}\left(\frac{x-\mu}{\sigma\sqrt{2}}\right)\right)$。
+
+应用：测量不确定度、校准误差、自然现象。
 
 ### 2. 均匀分布
 
-**参数**：`Uniform(μ, σ)` 其中 μ 是均值，σ 是标准差  
-**支撑**：$[\mu - \sqrt{3}\sigma, \mu + \sqrt{3}\sigma]$  
-**均值**：$\mu$  
-**标准差**：$\sigma$  
+参数：`Uniform(μ, σ)` 其中 μ 是均值，σ 是标准差。
 
-**概率密度函数**：$f(x) = \frac{1}{2\sqrt{3}\sigma}$ 对于 $x \in [a,b]$，否则为 0  
-**累积分布函数**：$F(x) = \frac{x - a}{b - a}$ 对于 $x \in [a,b]$  
+支撑：$[\mu - \sqrt{3}\sigma, \mu + \sqrt{3}\sigma]$。
 
-**应用**：数字舍入误差、量化噪声、矩形不确定度
+均值：$\mu$。
+
+标准差：$\sigma$。
+
+概率密度函数：$f(x) = \frac{1}{2\sqrt{3}\sigma}$ 对于 $x \in [a,b]$，否则为 0。
+
+累积分布函数：$F(x) = \frac{x - a}{b - a}$ 对于 $x \in [a,b]$。
+
+应用：数字舍入误差、量化噪声、矩形不确定度。
 
 ### 3. 三角分布
 
-**参数**：`Triangular(min, mode, max)`  
-**均值**：$\mu = \frac{\text{min} + \text{mode} + \text{max}}{3}$  
-**方差**：$\sigma^2 = \frac{\text{min}^2 + \text{mode}^2 + \text{max}^2 - \text{min} \cdot \text{mode} - \text{min} \cdot \text{max} - \text{mode} \cdot \text{max}}{18}$  
+参数：`Triangular(min, mode, max)`。
 
-**概率密度函数**：
+均值：$\mu = \frac{\text{min} + \text{mode} + \text{max}}{3}$。
+
+方差：$\sigma^2 = \frac{\text{min}^2 + \text{mode}^2 + \text{max}^2 - \text{min} \cdot \text{mode} - \text{min} \cdot \text{max} - \text{mode} \cdot \text{max}}{18}$。
+
+概率密度函数：
 $$f(x) = \begin{cases}
 \frac{2(x-\text{min})}{(\text{max}-\text{min})(\text{mode}-\text{min})} & \text{对于 } \text{min} \leq x \leq \text{mode} \\
 \frac{2(\text{max}-x)}{(\text{max}-\text{min})(\text{max}-\text{mode})} & \text{对于 } \text{mode} < x \leq \text{max}
 \end{cases}$$
 
-**参考文献**：Evans, M.; Hastings, N.; and Peacock, B. "Triangular Distribution." Ch. 40 in *Statistical Distributions, 3rd ed.* New York: Wiley, pp. 187-188, 2000.
+参考文献：Evans, M.; Hastings, N.; and Peacock, B. "Triangular Distribution." Ch. 40 in Statistical Distributions, 3rd ed. New York: Wiley, pp. 187-188, 2000.
 
-**在线参考**：[MathWorld - Triangular Distribution](https://mathworld.wolfram.com/TriangularDistribution.html)
+在线参考：[MathWorld - Triangular Distribution](https://mathworld.wolfram.com/TriangularDistribution.html)
 
 ### 4. 梯形分布
 
-该库提供两种梯形分布的实现形式：
+该库提供两种梯形分布的实现形式。
 
 #### 4.1 传统梯形分布
-**参数**：`Trapezoidal(a, b, c, d)` 其中 $a \leq b \leq c \leq d$  
-- `a`：分布的最小值（左端点）
-- `b`：平坦区域的左端点  
-- `c`：平坦区域的右端点
-- `d`：分布的最大值（右端点）
 
-**均值**：$\mu = \frac{a + b + c + d}{4}$  
-**方差**：$\sigma^2 = \frac{1}{18}[(d-a)^2 + (c-b)^2 + (d-a)(c-b)]$
+参数：`Trapezoidal(a, b, c, d)` 其中 $a \leq b \leq c \leq d$。
 
-**概率密度函数**：
+a 表示分布的最小值（左端点）。
+
+b 表示平坦区域的左端点。
+
+c 表示平坦区域的右端点。
+
+d 表示分布的最大值（右端点）。
+
+均值：$\mu = \frac{a + b + c + d}{4}$。
+
+方差：$\sigma^2 = \frac{1}{18}[(d-a)^2 + (c-b)^2 + (d-a)(c-b)]$。
+
+概率密度函数：
 $$f(x) = \begin{cases}
 \frac{2(x-a)}{(d-a+c-b)(b-a)} & \text{对于 } a \leq x \leq b \\
 \frac{2}{d-a+c-b} & \text{对于 } b \leq x \leq c \\
@@ -110,79 +136,95 @@ $$f(x) = \begin{cases}
 \end{cases}$$
 
 #### 4.2 平台梯形分布
-**参数**：`TrapezoidalPlateau(a, b, plateau)` 其中：
-- `a`：分布的最小值
-- `b`：分布的最大值  
-- `plateau`：中央平坦区域的长度（非位置）
 
-**参数关系**：
-- 总宽度：$w = b - a$
-- 边坡宽度：$w_{\text{slope}} = \frac{w - \text{plateau}}{2}$
-- 上升区间：$[a, a + w_{\text{slope}}]$  
-- 平坦区间：$[a + w_{\text{slope}}, b - w_{\text{slope}}]$
-- 下降区间：$[b - w_{\text{slope}}, b]$
+参数：`TrapezoidalPlateau(a, b, plateau)`。
 
-**均值**：$\mu = \frac{a + b}{2}$（对称分布）  
-**标准差**：$\sigma = \sqrt{\frac{(b-a)^2 - \text{plateau}^2}{12}}$
+a 表示分布的最小值。
 
-**概率密度函数**：
+b 表示分布的最大值。
+
+plateau 表示中央平坦区域的长度（非位置）。
+
+参数关系说明如下。
+
+总宽度：$w = b - a$。
+
+边坡宽度：$w_{\text{slope}} = \frac{w - \text{plateau}}{2}$。
+
+上升区间：$[a, a + w_{\text{slope}}]$。
+
+平坦区间：$[a + w_{\text{slope}}, b - w_{\text{slope}}]$。
+
+下降区间：$[b - w_{\text{slope}}, b]$。
+
+均值：$\mu = \frac{a + b}{2}$（对称分布）。
+
+标准差：$\sigma = \sqrt{\frac{(b-a)^2 - \text{plateau}^2}{12}}$。
+
+概率密度函数：
 $$f(x) = \begin{cases}
 \frac{2(x-a)}{w_{\text{slope}} \cdot w} & \text{对于上升区间} \\
 \frac{2}{w} & \text{对于平坦区间} \\
 \frac{2(b-x)}{w_{\text{slope}} \cdot w} & \text{对于下降区间}
 \end{cases}$$
 
-**应用**：
-- 工程公差分析
-- 具有已知平坦区域长度的测量范围
-- 质量控制中的规格限制
-- 计量学中的矩形和三角不确定度的组合
+应用包括工程公差分析、具有已知平坦区域长度的测量范围、质量控制中的规格限制、计量学中的矩形和三角不确定度的组合。
 
-### 5. U形分布（反正弦分布）
+### 5. U 形分布（反正弦分布）
 
-**参数**：`UShape(min, max)`  
-**均值**：$\mu = \frac{\text{min} + \text{max}}{2}$  
-**标准差**：$\sigma = \frac{\text{max} - \text{min}}{2\sqrt{2}}$  
+参数：`UShape(min, max)`。
 
-**概率密度函数**：$f(x) = \frac{1}{\pi\sqrt{u(1-u)(\text{max}-\text{min})}}$ 其中 $u = \frac{x-\text{min}}{\text{max}-\text{min}}$  
-**累积分布函数**：$F(x) = \frac{2}{\pi}\arcsin(\sqrt{u})$  
+均值：$\mu = \frac{\text{min} + \text{max}}{2}$。
 
-**应用**：振荡现象、极值场景
+标准差：$\sigma = \frac{\text{max} - \text{min}}{2\sqrt{2}}$。
+
+概率密度函数：$f(x) = \frac{1}{\pi\sqrt{u(1-u)(\text{max}-\text{min})}}$，其中 $u = \frac{x-\text{min}}{\text{max}-\text{min}}$。
+
+累积分布函数：$F(x) = \frac{2}{\pi}\arcsin(\sqrt{u})$。
+
+应用：振荡现象、极值场景。
 
 ### 6. 瑞利分布
 
-**参数**：`Rayleigh(σ)` 其中 σ 是尺度参数  
-**均值**：$\mu = \sigma\sqrt{\frac{\pi}{2}}$  
-**标准差**：$\sigma_{\text{std}} = \sigma\sqrt{2 - \frac{\pi}{2}}$  
+参数：`Rayleigh(σ)` 其中 σ 是尺度参数。
 
-**概率密度函数**：$f(x) = \frac{x}{\sigma^2}\exp\left(-\frac{x^2}{2\sigma^2}\right)$ 对于 $x \geq 0$  
-**累积分布函数**：$F(x) = 1 - \exp\left(-\frac{x^2}{2\sigma^2}\right)$  
+均值：$\mu = \sigma\sqrt{\frac{\pi}{2}}$。
 
-**应用**：风速建模、波高分析、可靠性工程
+标准差：$\sigma_{\text{std}} = \sigma\sqrt{2 - \frac{\pi}{2}}$。
 
-**参考文献**：Papoulis, A. *Probability, Random Variables, and Stochastic Processes, 2nd ed.* New York: McGraw-Hill, pp. 104 and 148, 1984.
+概率密度函数：$f(x) = \frac{x}{\sigma^2}\exp\left(-\frac{x^2}{2\sigma^2}\right)$ 对于 $x \geq 0$。
 
-**在线参考**：[MathWorld - Rayleigh Distribution](https://mathworld.wolfram.com/RayleighDistribution.html)
+累积分布函数：$F(x) = 1 - \exp\left(-\frac{x^2}{2\sigma^2}\right)$。
+
+应用：风速建模、波高分析、可靠性工程。
+
+参考文献：Papoulis, A. Probability, Random Variables, and Stochastic Processes, 2nd ed. New York: McGraw-Hill, pp. 104 and 148, 1984。
+
+在线参考：[MathWorld - Rayleigh Distribution](https://mathworld.wolfram.com/RayleighDistribution.html)
 
 ### 7. 对数正态分布
 
-**参数**：`LogNormal(μ, σ)` 其中 μ 和 σ 是对数尺度参数  
-**均值**：$E[X] = \exp\left(\mu + \frac{\sigma^2}{2}\right)$  
-**方差**：$\text{Var}[X] = (\exp(\sigma^2) - 1)\exp(2\mu + \sigma^2)$  
+参数：`LogNormal(μ, σ)` 其中 μ 和 σ 是对数尺度参数。
 
-**概率密度函数**：$f(x) = \frac{1}{x\sigma\sqrt{2\pi}}\exp\left(-\frac{1}{2}\left(\frac{\ln(x)-\mu}{\sigma}\right)^2\right)$ 对于 $x > 0$  
+均值：$E[X] = \exp\left(\mu + \frac{\sigma^2}{2}\right)$。
 
-**应用**：金融建模、粒度分布、环境数据
+方差：$\text{Var}[X] = (\exp(\sigma^2) - 1)\exp(2\mu + \sigma^2)$。
+
+概率密度函数：$f(x) = \frac{1}{x\sigma\sqrt{2\pi}}\exp\left(-\frac{1}{2}\left(\frac{\ln(x)-\mu}{\sigma}\right)^2\right)$ 对于 $x > 0$。
+
+应用：金融建模、粒度分布、环境数据。
 
 ### 8. 反正弦分布
 
-**参数**：`InvSine(min, max)` - 等价于 U形分布  
-**应用**：相位分布、角度测量
+参数：`InvSine(min, max)`，等价于 U 形分布。
+
+应用：相位分布、角度测量。
 
 ### 9. 自举分布
 
-**参数**：`Bootstrap(n, samples)` 其中 n 是自举样本数  
-**实现**：使用蓄水池采样进行高效的自举重采样
+参数：`Bootstrap(n, samples)`，其中 n 是自举样本数。
+
+实现：使用蓄水池采样进行高效的自举重采样。
 
 ```fsharp
 type BootstrapSamples = struct
@@ -193,7 +235,7 @@ type BootstrapSamples = struct
 end
 ```
 
-## 覆盖因子（k因子）
+## 覆盖因子（k 因子）
 
 该库使用中心百分位数为计量学应用计算覆盖因子：
 
@@ -208,18 +250,16 @@ let expandedUncertainty dist p =
     abs(upperQuantile - distMean)
 ```
 
-**典型覆盖因子（95% 置信度）**：
-- 正态分布：k ≈ 1.96
-- 均匀分布：k ≈ 1.65
-- U形分布：k ≈ 1.41
-- 瑞利分布：k ≈ 2.23
+典型覆盖因子（95% 置信度）：正态分布 k ≈ 1.96。均匀分布 k ≈ 1.65。U 形分布 k ≈ 1.41。瑞利分布 k ≈ 2.23。
 
 ## 解析逆函数
 
-该库实现了逆累积分布函数计算的闭式解析解，与数值方法相比提供了优越的性能：
+该库实现了逆累积分布函数计算的闭式解析解，与数值方法相比提供了优越的性能。
 
 ### 正态分布逆累积分布函数
+
 使用逆误差函数的有理逼近：
+
 ```fsharp
 let invErf z =
     let a = 0.147
@@ -231,13 +271,17 @@ let invErf z =
 ```
 
 ### 瑞利分布逆累积分布函数
+
 直接解析解：
+
 ```fsharp
 sigma * sqrt(-2.0 * log(1.0 - p))
 ```
 
 ### 三角分布逆累积分布函数
+
 基于众数的分段解析解：
+
 ```fsharp
 let fc = (mode - min) / (max - min)
 if p < fc then
@@ -259,7 +303,8 @@ type Value with
     static member (~-) (v: Value) = Multiplication(Exact(-1.0), v)
 ```
 
-**使用示例**：
+使用示例：
+
 ```fsharp
 let v1 = Distribution(Normal(10.0, 2.0))
 let v2 = Distribution(Uniform(5.0, 1.0))
@@ -269,10 +314,11 @@ let result = v1 + v2 * 2.0 - v1 / v2  // 自然数学语法
 ## 安装和使用
 
 ### 先决条件
-- .NET 8.0 或更高版本
-- F# 编译器
+
+需要 .NET 8.0 或更高版本以及 F# 编译器。
 
 ### 项目结构
+
 ```
 metro-base/
 ├── metro-base.fsproj        # 库项目
@@ -283,11 +329,13 @@ metro-base/
 ```
 
 ### 构建库
+
 ```bash
 dotnet build metro-base.fsproj
 ```
 
 ### 运行控制台应用程序
+
 ```bash
 dotnet run --project metro-console.fsproj
 ```
@@ -300,8 +348,8 @@ open metro_base.metro
 // 创建分布
 let normalDist = Normal(0.0, 10.0)
 let uniformDist = Uniform(5.0, 2.0)
-let trapDist = Trapezoidal(2.0, 3.0, 5.0, 8.0)          // 传统4参数梯形
-let trapPlateau = TrapezoidalPlateau(2.0, 8.0, 3.0)     // 平台梯形，高原长度=3
+let trapDist = Trapezoidal(2.0, 3.0, 5.0, 8.0)          // 传统 4 参数梯形
+let trapPlateau = TrapezoidalPlateau(2.0, 8.0, 3.0)     // 平台梯形，高原长度 = 3
 
 // 计算统计属性
 let meanVal = mean normalDist        // 5.0
@@ -324,12 +372,13 @@ let resultStdev = stdev result
 ## 高级特性
 
 ### 蒙特卡洛仿真
+
 使用 Box-Muller 变换进行正态分布的高效采样，其他分布使用解析逆变换：
 
 ```fsharp
 let rec sample (r: System.Random) value =
     match value with
-    | Normal(a, b) -> 
+    | Normal(a, b) ->
         let mu = (a + b) / 2.0
         let sigma = (b - a) / 4.0
         // Box-Muller 变换
@@ -339,6 +388,7 @@ let rec sample (r: System.Random) value =
 ```
 
 ### 核密度估计
+
 对于经验分布，该库使用 Silverman 拇指法则进行带宽选择：
 
 ```fsharp
@@ -348,44 +398,48 @@ let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
 
 ## 参考文献和延伸阅读
 
-### 主要数学参考文献
-1. Abramowitz, M. and Stegun, I. A. *Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables*, 9th printing. New York: Dover, 1972.
-2. Evans, M.; Hastings, N.; and Peacock, B. *Statistical Distributions, 3rd ed.* New York: Wiley, 2000.
-3. Papoulis, A. *Probability, Random Variables, and Stochastic Processes, 2nd ed.* New York: McGraw-Hill, 1984.
+主要数学参考文献：Abramowitz, M. and Stegun, I. A. Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables, 9th printing. New York: Dover, 1972。
 
-### 在线数学资源
-- [MathWorld - Error Function](https://mathworld.wolfram.com/Erf.html)
-- [MathWorld - Triangular Distribution](https://mathworld.wolfram.com/TriangularDistribution.html)
-- [MathWorld - Rayleigh Distribution](https://mathworld.wolfram.com/RayleighDistribution.html)
-- [MathWorld - Statistical Distributions](https://mathworld.wolfram.com/topics/StatisticalDistributions.html)
+主要数学参考文献：Evans, M.; Hastings, N.; and Peacock, B. Statistical Distributions, 3rd ed. New York: Wiley, 2000。
 
-### 计量学标准
-- ISO/IEC Guide 98-3:2008 (GUM) - 测量不确定度表示指南
-- NIST Technical Note 1297 - NIST 测量结果不确定度评估和表达指南
+主要数学参考文献：Papoulis, A. Probability, Random Variables, and Stochastic Processes, 2nd ed. New York: McGraw-Hill, 1984。
+
+在线数学资源：[MathWorld - Error Function](https://mathworld.wolfram.com/Erf.html)。
+
+在线数学资源：[MathWorld - Triangular Distribution](https://mathworld.wolfram.com/TriangularDistribution.html)。
+
+在线数学资源：[MathWorld - Rayleigh Distribution](https://mathworld.wolfram.com/RayleighDistribution.html)。
+
+在线数学资源：[MathWorld - Statistical Distributions](https://mathworld.wolfram.com/topics/StatisticalDistributions.html)。
+
+计量学标准：ISO/IEC Guide 98-3:2008 (GUM) - 测量不确定度表示指南。
+
+计量学标准：NIST Technical Note 1297 - NIST 测量结果不确定度评估和表达指南。
 
 ## 性能特性
 
-该库优先使用解析解而非数值方法以获得最佳性能：
+该库优先使用解析解而非数值方法以获得最佳性能。
 
-- **解析逆累积分布函数**：O(1) 复杂度 vs 二分搜索的 O(log n)
-- **直接采样**：使用变换方法而非拒绝采样
-- **内存高效**：函数式编程方法，最小状态
+解析逆累积分布函数具备 O(1) 复杂度（相较于二分搜索的 O(log n)）。
+
+直接采样采用变换方法而非拒绝采样。
+
+内存高效，函数式编程方法，最小状态。
 
 ## 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
+本项目采用 MIT 许可证，详见 LICENSE 文件。
 
 ## 贡献
 
-欢迎贡献！请确保所有新分布包括：
-1. 完整的数学文档
-2. 尽可能的解析逆函数
-3. 具有已知参考值的单元测试
-4. 性能基准
+欢迎贡献。请确保所有新分布包括：完整的数学文档；尽可能的解析逆函数；具有已知参考值的单元测试；性能基准。
 
-## 致谢
+## 参考和验证
 
-- 数学公式经 MathWorld (Wolfram Research) 验证
-- 误差函数实现基于 Abramowitz & Stegun
-- 自举方法遵循 Efron & Tibshirani
-- 计量学惯例遵循 ISO GUM 指南
+数学公式经 MathWorld (Wolfram Research) 验证。
+
+误差函数实现基于 Abramowitz & Stegun。
+
+自举方法遵循 Efron & Tibshirani。
+
+计量学惯例遵循 ISO GUM 指南。

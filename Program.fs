@@ -1,10 +1,10 @@
-﻿
-open System
+﻿open System
 open metro_base.metro
+
 [<EntryPoint>]
 let main argv =
     printfn "Hello World from F#!"
-    
+
     // Test Normal distribution
     printfn "\n=== NORMAL DISTRIBUTION ==="
     let normalDist = Normal(0.0, 10.0)
@@ -25,21 +25,21 @@ let main argv =
     printfn "Mean: %f, Stdev: %f" (mean ushapeDist) (stdev ushapeDist)
     printfn "InvCDF(0.95): %f" (invCdf ushapeDist 0.95)
     printfn "Kp(0.95): %f" (kp ushapeDist 0.95)
-    
+
     // Test Rayleigh distribution
     printfn "\n=== RAYLEIGH DISTRIBUTION ==="
     let rayleighDist = Rayleigh(2.0)
     printfn "Mean: %f, Stdev: %f" (mean rayleighDist) (stdev rayleighDist)
     printfn "InvCDF(0.95): %f" (invCdf rayleighDist 0.95)
     printfn "Kp(0.95): %f" (kp rayleighDist 0.95)
-    
+
     // Test LogNormal distribution
     printfn "\n=== LOG-NORMAL DISTRIBUTION ==="
     let logNormalDist = LogNormal(1.0, 0.5)
     printfn "Mean: %f, Stdev: %f" (mean logNormalDist) (stdev logNormalDist)
     printfn "InvCDF(0.95): %f" (invCdf logNormalDist 0.95)
     printfn "Kp(0.95): %f" (kp logNormalDist 0.95)
-    
+
     // Test InvSine distribution
     printfn "\n=== INVERSE SINE DISTRIBUTION ==="
     let invSineDist = InvSine(1.0, 5.0)
@@ -50,16 +50,16 @@ let main argv =
 
     let v1 = Distribution(Normal(10.0, 2.0))
     let v2 = Distribution(Uniform(5.0, 1.0))
-    
+
     // Using overloaded operators instead of function calls
-    let v3 = v1 + v2        // Addition
-    let v4 = v1 * v2        // Multiplication
-    let v5 = v1 / v2        // Division
-    let v6 = v1 * v1        // Power (square)
-    let v7 = v1 - v2        // Subtraction
-    let v8 = -v1            // Negation
-    let v9 = v1 + 5.0       // Mixed with float
-    let v10 = 2.0 * v1      // Float multiplication
+    let v3 = v1 + v2 // Addition
+    let v4 = v1 * v2 // Multiplication
+    let v5 = v1 / v2 // Division
+    let v6 = v1 * v1 // Power (square)
+    let v7 = v1 - v2 // Subtraction
+    let v8 = -v1 // Negation
+    let v9 = v1 + 5.0 // Mixed with float
+    let v10 = 2.0 * v1 // Float multiplication
     let v11 = v10 ** 2.0 // Power with float exponent
 
     let result = eval v11 100000
@@ -105,8 +105,14 @@ let main argv =
     printfn "Sample Data: %A" sampleData
     printfn "Sample Size: %d" (Array.length sampleData)
     printfn "Mean of Sample Data: %f" (Array.average sampleData)
-    printfn "stdev of Sample Data: %f" (sqrt (Array.sumBy (fun x -> (x - Array.average sampleData) ** 2.0) sampleData / float (Array.length sampleData - 1)))
-    
+
+    printfn
+        "stdev of Sample Data: %f"
+        (sqrt (
+            Array.sumBy (fun x -> (x - Array.average sampleData) ** 2.0) sampleData
+            / float (Array.length sampleData - 1)
+        ))
+
     printfn "\nBootstrap with 1000 samples:"
     let bootstrapDist = Bootstrap(1000, sampleData)
     printfn "Mean: %f, Stdev: %f" (mean bootstrapDist) (stdev bootstrapDist)
