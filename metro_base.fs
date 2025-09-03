@@ -776,7 +776,7 @@ module metro =
         let centeredPercentile = (1.0 + p) / 2.0 // 中心覆盖区间 / For centered coverage interval
         let upperQuantile = invCdf dist centeredPercentile
         let distMean = mean dist
-        let distStdev = stdev dist
+        // let distStdev = stdev dist
         abs (upperQuantile - distMean)
 
     // 计算覆盖因子kp / Calculate coverage factor kp

@@ -86,7 +86,7 @@ $$\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$$
 
 概率密度函数： $f(x) = \frac{1}{2\sqrt{3}\sigma}$ 对于 $x \in [a,b]$，否则为 0。
 
-累积分布函数：$F(x) = \frac{x - a}{b - a}$ 对于 $x \in [a,b]$。
+累积分布函数： $F(x) = \frac{x - a}{b - a}$ 对于 $x \in [a,b]$。
 
 应用：数字舍入误差、量化噪声、矩形不确定度。
 
