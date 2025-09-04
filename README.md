@@ -328,11 +328,11 @@ let result = v1 + v2 * 2.0 - v1 / v2  // 自然数学语法
 
 ```
 metro-base/
-├── metro-base.fsproj        # 库项目
-├── metro-console.fsproj     # 控制台应用程序
+├── metro-base.fsproj       # 库项目
+├── metro-console.fsproj    # 控制台应用程序
 ├── metro_base.fs           # 核心库实现
 ├── Program.fs              # 使用示例和测试
-└── README.md              # 本文档
+└── README.md               # 本文档
 ```
 
 ### 构建库
