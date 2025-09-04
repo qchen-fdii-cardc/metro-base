@@ -75,8 +75,8 @@ module metro =
     // 概率分布联合类型 - 支持多种统计分布
     // Distribution union type - supporting multiple statistical distributions
     type Distribution =
-        | Uniform of float * float // 均匀分布(均值, 标准差) / Uniform distribution (mean, std)
-        | Normal of float * float // 正态分布(下界, 上界) / Normal distribution (lower, upper)
+        | Uniform of float * float // 均匀分布(下界, 上界) / Uniform distribution (lower, upper)
+        | Normal of float * float // 正态分布(均值, 标准差) / Normal distribution (mean, std)
         | Triangular of float * float * float // 三角分布(最小值, 众数, 最大值) / Triangular distribution (min, mode, max)
         | Trapezoidal of float * float * float * float // 梯形分布(a, b, c, d) / Trapezoidal distribution
         | TrapezoidalPlateau of float * float * float // 平台梯形分布 / Plateau trapezoidal distribution
@@ -91,8 +91,8 @@ module metro =
     // 计算分布的均值 / Calculate distribution mean
     let mean dist =
         match dist with
-        | Uniform(mu, _) -> mu // 均匀分布均值 / Uniform distribution mean
-        | Normal(a, b) -> (a + b) / 2.0 // 正态分布均值 / Normal distribution mean
+        | Uniform(a, b) -> (a + b) / 2.0 // 均匀分布均值 / Uniform distribution mean
+        | Normal(mu, _) -> mu // 正态分布均值 / Normal distribution mean
         | Triangular(min, mode, max) -> (min + mode + max) / 3.0 // 三角分布均值 / Triangular mean
         | Trapezoidal(a, b, c, d) -> (a + b + c + d) / 4.0 // 梯形分布均值 / Trapezoidal mean
         | TrapezoidalPlateau(a, b, plateau) -> (a + b) / 2.0 // 平台梯形均值 / Plateau trapezoidal mean (symmetric)
@@ -109,8 +109,8 @@ module metro =
     // 计算分布的标准差 / Calculate distribution standard deviation
     let stdev dist =
         match dist with
-        | Uniform(_, sigma) -> sigma // 均匀分布标准差 / Uniform distribution std
-        | Normal(a, b) -> (b - a) / 4.0 // 正态分布标准差 / Normal distribution std (95% coverage)
+        | Uniform(a, b) -> (b - a) / (2.0 * sqrt (3.0)) // 均匀分布标准差 / Uniform distribution std
+        | Normal(_, sigma) -> sigma // 正态分布标准差 / Normal distribution std
         | Triangular(min, mode, max) ->
             sqrt (
                 (min * min + mode * mode + max * max - min * mode - min * max - mode * max)
@@ -175,15 +175,15 @@ module metro =
     // 计算累积分布函数 (CDF) / Calculate cumulative distribution function
     let cdf dist x =
         match dist with
-        | Uniform(mu, sigma) -> // 均匀分布CDF / Uniform distribution CDF
-            if x < mu - sqrt (3.0) * sigma then
+        | Uniform(a, b) -> // 均匀分布CDF / Uniform distribution CDF
+            if x < a then
                 0.0
-            elif x > mu + sqrt (3.0) * sigma then
+            elif x > b then
                 1.0
             else
-                (x - (mu - sqrt (3.0) * sigma)) / (2.0 * sqrt (3.0) * sigma)
-        | Normal(a, b) -> // 正态分布CDF / Normal distribution CDF
-            let z = (x - (a + b) / 2.0) / ((b - a) / 4.0)
+                (x - a) / (b - a)
+        | Normal(mu, sigma) -> // 正态分布CDF / Normal distribution CDF
+            let z = (x - mu) / sigma
             0.5 * (1.0 + erf (z / sqrt (2.0)))
         | Triangular(min, mode, max) -> // 三角分布CDF / Triangular distribution CDF
             if x < min then
@@ -271,14 +271,14 @@ module metro =
     // 计算概率密度函数 (PDF) / Calculate probability density function
     let pdf dist x =
         match dist with
-        | Uniform(mu, sigma) -> // 均匀分布PDF / Uniform distribution PDF
-            if x < mu - sqrt (3.0) * sigma || x > mu + sqrt (3.0) * sigma then
+        | Uniform(a, b) -> // 均匀分布PDF / Uniform distribution PDF
+            if x < a || x > b then
                 0.0
             else
-                1.0 / (2.0 * sqrt (3.0) * sigma)
-        | Normal(a, b) -> // 正态分布PDF / Normal distribution PDF
-            let z = (x - (a + b) / 2.0) / ((b - a) / 4.0)
-            (1.0 / ((b - a) / 4.0 * sqrt (2.0 * MathHelpers.pi))) * exp (-0.5 * z * z)
+                1.0 / (b - a)
+        | Normal(mu, sigma) -> // 正态分布PDF / Normal distribution PDF
+            let z = (x - mu) / sigma
+            (1.0 / (sigma * sqrt (2.0 * MathHelpers.pi))) * exp (-0.5 * z * z)
         | Triangular(min, mode, max) -> // 三角分布PDF / Triangular distribution PDF
             if x < min || x > max then
                 0.0
@@ -407,13 +407,9 @@ module metro =
     // 各分布的解析逆累积分布函数 / Analytical inverse CDF for each distribution
     let invCdf dist p =
         match dist with
-        | Uniform(mu, sigma) -> // 均匀分布逆CDF / Uniform distribution inverse CDF
-            let a = mu - sqrt (3.0) * sigma
-            let b = mu + sqrt (3.0) * sigma
+        | Uniform(a, b) -> // 均匀分布逆CDF / Uniform distribution inverse CDF
             a + p * (b - a) // 线性插值 / Linear interpolation
-        | Normal(a, b) -> // 正态分布逆CDF / Normal distribution inverse CDF
-            let mu = (a + b) / 2.0
-            let sigma = (b - a) / 4.0
+        | Normal(mu, sigma) -> // 正态分布逆CDF / Normal distribution inverse CDF
             mu + sigma * MathHelpers.invStandardNormal (p)
         | Triangular(min, mode, max) -> // 三角分布逆CDF / Triangular distribution inverse CDF
             let fc = (mode - min) / (max - min)
