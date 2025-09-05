@@ -12,9 +12,11 @@
         <Authors>Q. Chen</Authors>
         <Company>FDII.CARDC</Company>
         <Description>A F# library for statistical metrology</Description>
+        <PackageProjectUrl>https://github.com/qchen-fdii-cardc/metro-base</PackageProjectUrl>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/qchen-fdii-cardc/metro-base</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageTags>metrology; statistics; distribution; monte carlo; simulation; fsharp</PackageTags>
     </PropertyGroup>
 
