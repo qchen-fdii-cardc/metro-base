@@ -3,14 +3,19 @@
     <PropertyGroup>
         <!-- <OutputType>Exe</OutputType> -->
         <TargetFramework>net8.0</TargetFramework>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <RootNamespace>metro_base</RootNamespace>
+        <!-- Package meta data -->
+        <!-- https://learn.microsoft.com/en-us/nuget/create-packages/package-authoring-best-practices -->
         <PackageId>metro-base.fsharp.qc</PackageId>
-        <Version>0.1.3</Version>
+        <PackageVersion>0.1.4</PackageVersion>
         <Authors>Q. Chen</Authors>
         <Company>FDII.CARDC</Company>
         <Description>A F# library for statistical metrology</Description>
-        <Repository>https://github.com/qchen-fdii-cardc/metro-base</Repository>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/qchen-fdii-cardc/metro-base</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageTags>metrology; statistics; distribution; monte carlo; simulation; fsharp</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>
