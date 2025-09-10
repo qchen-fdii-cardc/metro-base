@@ -1,7 +1,6 @@
 module MetroBase.Tests
 
 open Xunit
-open metro_base.metro
 
 [<Fact>]
 let ``smoke test`` () =
