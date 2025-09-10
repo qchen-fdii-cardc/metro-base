@@ -30,11 +30,11 @@ jobs:
 
     - name: Build
       working-directory: ${{env.PROJECT_FOLDER}}
-      run: dotnet build --configuration Release
+      run: dotnet build --configuration Release ${{env.PROJECT_FILE}} 
 
     - name: Pack
       working-directory: ${{env.PROJECT_FOLDER}}
-      run: dotnet pack --configuration Release --no-build --output .
+      run: dotnet pack --configuration Release --no-build --output . ${{env.PROJECT_FILE}} 
 
     # Here we use external public config file to publish nuget package.
     # The script needs to know the path to the csproj file and the nuget API key.
