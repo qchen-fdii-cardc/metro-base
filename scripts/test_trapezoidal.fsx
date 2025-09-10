@@ -2,16 +2,19 @@
 // This script should be run from the project root: dotnet fsi scripts/test_trapezoidal.fsx
 
 // Build the project first (relative to project root)
-let buildProcess = System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+let buildProcess =
+    System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+
 buildProcess.WaitForExit()
 
 // Reference the built DLL (relative to project root)
-#r "../bin/Debug/net8.0/metro-base.dll"
+#r "nuget: metro-base.fsharp.qc, 0.2.5"
+
 open System
-open metro_base.metro
+open metro_base.stat
 
 // Test Trapezoidal distributions
-let testDist1 = Trapezoidal(1.0, 3.0, 5.0, 7.0)  // Should be trapezoid with flat top from 3 to 5
+let testDist1 = Trapezoidal(1.0, 3.0, 5.0, 7.0) // Should be trapezoid with flat top from 3 to 5
 let testDist2 = TrapezoidalPlateau(2.0, 8.0, 5.0) // Should be trapezoid with plateau at 5.0
 
 printfn "=== Testing Trapezoidal(1,3,5,7) ==="

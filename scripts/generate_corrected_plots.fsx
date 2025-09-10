@@ -2,46 +2,52 @@
 open System.IO
 
 // Build the project first
-let buildProcess = System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+let buildProcess =
+    System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+
 buildProcess.WaitForExit()
 
 // Reference the built DLL
-#r "bin/Debug/net8.0/metro-base.dll"
-open metro_base.metro
+#r "nuget: metro-base.fsharp.qc, 0.2.5"
+open metro_base.stat
 
 // Ensure imgs directory exists
 let imgsDir = "imgs"
+
 if not (Directory.Exists(imgsDir)) then
     Directory.CreateDirectory(imgsDir) |> ignore
 
 // Generate visualization data for the corrected trapezoidal distributions
-let distributions = [
-    ("Trapezoidal(2,3,5,8)", Trapezoidal(2.0, 3.0, 5.0, 8.0))
-    ("TrapezoidalPlateau(2,8,3)", TrapezoidalPlateau(2.0, 8.0, 3.0))
-]
+let distributions =
+    [ ("Trapezoidal(2,3,5,8)", Trapezoidal(2.0, 3.0, 5.0, 8.0))
+      ("TrapezoidalPlateau(2,8,3)", TrapezoidalPlateau(2.0, 8.0, 3.0)) ]
 
 // Generate x values
 let xMin, xMax = 0.0, 10.0
 let step = 0.1
-let xValues = [xMin .. step .. xMax]
+let xValues = [ xMin..step..xMax ]
 
 // Create CSV data
-let createCsvData() =
+let createCsvData () =
     let header = "x," + (distributions |> List.map fst |> String.concat ",")
-    let rows = 
-        xValues 
-        |> List.map (fun x -> 
-            let pdfValues = distributions |> List.map (fun (_, dist) -> pdf dist x |> sprintf "%.6f")
-            sprintf "%.1f,%s" x (String.concat "," pdfValues))
-    header :: rows
-    |> String.concat "\n"
 
-let csvData = createCsvData()
+    let rows =
+        xValues
+        |> List.map (fun x ->
+            let pdfValues =
+                distributions |> List.map (fun (_, dist) -> pdf dist x |> sprintf "%.6f")
+
+            sprintf "%.1f,%s" x (String.concat "," pdfValues))
+
+    header :: rows |> String.concat "\n"
+
+let csvData = createCsvData ()
 let csvPath = Path.Combine(imgsDir, "corrected_trapezoidal_plots.csv")
 File.WriteAllText(csvPath, csvData)
 
 // Generate Python plotting script
-let pythonScript = """#!/usr/bin/env python3
+let pythonScript =
+    """#!/usr/bin/env python3
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np

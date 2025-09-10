@@ -2,12 +2,14 @@
 // This script should be run from the project root: dotnet fsi scripts/final_verification.fsx
 
 // Build the project first
-let buildProcess = System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+let buildProcess =
+    System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+
 buildProcess.WaitForExit()
 
 // Reference the built DLL (relative to project root)
-#r "../bin/Debug/net8.0/metro-base.dll"
-open metro_base.metro
+#r "nuget: metro-base.fsharp.qc, 0.2.5"
+open metro_base.stat
 
 printfn "=== Final Verification of Corrected Distributions ==="
 printfn ""
@@ -33,13 +35,15 @@ printfn ""
 // Test PDF normalization
 let integrate f a b n =
     let h = (b - a) / float n
-    let sum = 
-        [0..n] 
-        |> List.map (fun i -> 
+
+    let sum =
+        [ 0..n ]
+        |> List.map (fun i ->
             let x = a + float i * h
             let weight = if i = 0 || i = n then 1.0 else 2.0
             weight * f x)
         |> List.sum
+
     sum * h / 2.0
 
 printfn "PDF Integration Tests (should be ~1.0):"

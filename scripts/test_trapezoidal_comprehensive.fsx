@@ -2,24 +2,29 @@
 // This script should be run from the project root: dotnet fsi scripts/test_trapezoidal_comprehensive.fsx
 
 // Build the project first (relative to project root)
-let buildProcess = System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+let buildProcess =
+    System.Diagnostics.Process.Start("dotnet", "build metro-base.fsproj")
+
 buildProcess.WaitForExit()
 
 // Reference the built DLL (relative to project root)
-#r "../bin/Debug/net8.0/metro-base.dll"
+#r "nuget: metro-base.fsharp.qc, 0.2.5"
+
 open System
-open metro_base.metro
+open metro_base.stat
 
 // Numerical integration using trapezoidal rule
 let integrate f a b n =
     let h = (b - a) / float n
-    let sum = 
-        [0..n] 
-        |> List.map (fun i -> 
+
+    let sum =
+        [ 0..n ]
+        |> List.map (fun i ->
             let x = a + float i * h
             let weight = if i = 0 || i = n then 1.0 else 2.0
             weight * f x)
         |> List.sum
+
     sum * h / 2.0
 
 printfn "=== Comprehensive Trapezoidal Distribution Tests ==="
@@ -35,7 +40,8 @@ printfn "  Stdev: %.6f" (stdev trap1)
 
 // Add more test points
 printfn "  PDF values:"
-for x in [0.5; 1.0; 2.0; 3.0; 4.0; 5.0; 6.0; 7.0; 7.5] do
+
+for x in [ 0.5; 1.0; 2.0; 3.0; 4.0; 5.0; 6.0; 7.0; 7.5 ] do
     printfn "    PDF(%.1f) = %.6f" x (pdf trap1 x)
 
 printfn ""
@@ -50,7 +56,8 @@ printfn "  Stdev: %.6f" (stdev trap2)
 
 // Add more test points
 printfn "  PDF values:"
-for x in [1.5; 2.0; 3.0; 4.0; 5.0; 6.0; 7.0; 8.0; 8.5] do
+
+for x in [ 1.5; 2.0; 3.0; 4.0; 5.0; 6.0; 7.0; 8.0; 8.5 ] do
     printfn "    PDF(%.1f) = %.6f" x (pdf trap2 x)
 
 printfn ""
@@ -58,14 +65,16 @@ printfn ""
 // Test inverse CDF
 printfn "=== Inverse CDF Tests ==="
 printfn "Trapezoidal(1,3,5,7):"
-for p in [0.1; 0.25; 0.5; 0.75; 0.9] do
+
+for p in [ 0.1; 0.25; 0.5; 0.75; 0.9 ] do
     let x = invCdf trap1 p
     let p_back = cdf trap1 x
     printfn "  invCDF(%.2f) = %.6f, CDF(%.6f) = %.6f" p x x p_back
 
 printfn ""
 printfn "TrapezoidalPlateau(2,8,5):"
-for p in [0.1; 0.25; 0.5; 0.75; 0.9] do
+
+for p in [ 0.1; 0.25; 0.5; 0.75; 0.9 ] do
     let x = invCdf trap2 p
     let p_back = cdf trap2 x
     printfn "  invCDF(%.2f) = %.6f, CDF(%.6f) = %.6f" p x x p_back
