@@ -39,7 +39,5 @@ jobs:
     # Here we use external public config file to publish nuget package.
     # The script needs to know the path to the csproj file and the nuget API key.
     - name: Publish nuget package
-      uses: brandedoutcast/publish-nuget@v2.5.2
-      with:
-          PROJECT_FILE_PATH: ${{env.PROJECT_FILE}}
-          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
+      working-directory: ${{env.PROJECT_FOLDER}}
+      run: dotnet nuget push *.nupkg -k ${{secrets.NUGET_API_KEY}} -s https://api.nuget.org/v3/index.json --no-symbols --skip-duplicate
