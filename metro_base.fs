@@ -1,22 +1,20 @@
-// F# 统计计量学库 - 支持多种概率分布和不确定度分析
 // F# Statistical Metrology Library - Supporting multiple probability distributions and uncertainty analysis
 
 namespace metro_base
 
-module metro =
+module math =
 
-    // Bootstrap 抽样结构体 - 用于自举法统计分析
     // Bootstrap sampling structure for statistical resampling analysis
     type BootstrapSamples =
         struct
-            val NumSamples: int // 抽样数量 / Number of samples
-            val Samples: float array // 原始样本数据 / Original sample data
-            val SampledArray: float array // 抽样结果数组 / Sampled result array
+            val NumSamples: int // Number of samples
+            val Samples: float array // Original sample data
+            val SampledArray: float array // Sampled result array
 
             new(numSamples: int, samples: float array) =
                 let rand = System.Random()
                 let sampledArray = Array.zeroCreate<float> numSamples
-                // 进行 Bootstrap 重抽样 / Perform Bootstrap resampling
+                // Perform Bootstrap resampling
                 for i in 0 .. numSamples - 1 do
                     sampledArray.[i] <- samples.[rand.Next(samples.Length)]
 
@@ -24,11 +22,11 @@ module metro =
                   Samples = samples
                   SampledArray = sampledArray }
 
-            // 获取抽样结果 / Get sampling results
+            // Get sampling results
             member this.Sample() = this.SampledArray
-            // 计算样本均值 / Calculate sample mean
+            // Calculate sample mean
             member this.Mean() = Array.average (this.Sample())
-            // 计算样本标准差 / Calculate sample standard deviation
+            // Calculate sample standard deviation
             member this.Stdev() =
                 let sampled = this.Sample()
                 let mean = this.Mean()
@@ -36,12 +34,11 @@ module metro =
 
         end
 
-    // 数学辅助函数模块 / Mathematical helper functions module
+    // Mathematical helper functions module
     module MathHelpers =
-        // 误差函数的逆函数 (Abramowitz & Stegun 近似)
         // Inverse error function using Abramowitz & Stegun approximation
         let invErf x =
-            let a = 0.147 // 近似参数 / Approximation parameter
+            let a = 0.147 // Approximation parameter
             let ln_term = log (1.0 - x * x)
             let first_term = 2.0 / (System.Math.PI * a) + ln_term / 2.0
             let second_term = ln_term / a
@@ -49,74 +46,73 @@ module metro =
             let result = sqrt_term - first_term
             (if x >= 0.0 then 1.0 else -1.0) * sqrt (result)
 
-        // 标准正态分布的逆累积分布函数 / Inverse CDF for standard normal distribution
+        // Inverse CDF for standard normal distribution
         let invStandardNormal p =
             if p <= 0.0 then System.Double.NegativeInfinity
             elif p >= 1.0 then System.Double.PositiveInfinity
             else sqrt (2.0) * invErf (2.0 * p - 1.0)
 
-        // 数学常数 π / Mathematical constant π
+        // Mathematical constant π
         let pi = System.Math.PI
 
-    // // Bootstrap辅助函数 / Bootstrap helper functions
-    // let createBootstrapSamples n (samples: float array) =
-    //     let rand = System.Random()
-    //     Array.init n (fun _ -> samples.[rand.Next(samples.Length)])
+// // Bootstrap helper functions
+// let createBootstrapSamples n (samples: float array) =
+//     let rand = System.Random()
+//     Array.init n (fun _ -> samples.[rand.Next(samples.Length)])
 
-    // let bootstrapMean n (samples: float array) =
-    //     let bootstrapSamples = createBootstrapSamples n samples
-    //     Array.average bootstrapSamples
+// let bootstrapMean n (samples: float array) =
+//     let bootstrapSamples = createBootstrapSamples n samples
+//     Array.average bootstrapSamples
 
-    // let bootstrapStdev n (samples: float array) =
-    //     let bootstrapSamples = createBootstrapSamples n samples
-    //     let mean = Array.average bootstrapSamples
-    //     sqrt(Array.average (Array.map (fun x -> (x - mean) ** 2.0) bootstrapSamples))
-
-    // 概率分布联合类型 - 支持多种统计分布
+// let bootstrapStdev n (samples: float array) =
+//     let bootstrapSamples = createBootstrapSamples n samples
+//     let mean = Array.average bootstrapSamples
+//     sqrt(Array.average (Array.map (fun x -> (x - mean) ** 2.0) bootstrapSamples))
+module stat =
     // Distribution union type - supporting multiple statistical distributions
     type Distribution =
-        | Uniform of float * float // 均匀分布(下界, 上界) / Uniform distribution (lower, upper)
-        | Normal of float * float // 正态分布(均值, 标准差) / Normal distribution (mean, std)
-        | Triangular of float * float * float // 三角分布(最小值, 众数, 最大值) / Triangular distribution (min, mode, max)
-        | Trapezoidal of float * float * float * float // 梯形分布(a, b, c, d) / Trapezoidal distribution
-        | TrapezoidalPlateau of float * float * float // 平台梯形分布 / Plateau trapezoidal distribution
-        | UShape of float * float // U型分布(最小值, 最大值) / U-shape distribution (min, max)
-        | Rayleigh of float // 瑞利分布(尺度参数σ) / Rayleigh distribution (scale parameter σ)
-        | LogNormal of float * float // 对数正态分布(μ, σ) / Log-normal distribution (μ, σ)
-        | InvSine of float * float // 反正弦分布(最小值, 最大值) / Inverse sine distribution (min, max)
-        | Sample of float array // 样本经验分布 / Empirical distribution from samples
-        | Bootstrap of int * float array // Bootstrap抽样分布 / Bootstrap sampling distribution
-        | BootstrapStruct of BootstrapSamples // Bootstrap样本结构 / Bootstrap samples structure
+        | Uniform of float * float // Uniform distribution (lower, upper)
+        | Normal of float * float // Normal distribution (mean, std)
+        | Triangular of float * float * float // Triangular distribution (min, mode, max)
+        | Trapezoidal of float * float * float * float // Trapezoidal distribution
+        | TrapezoidalPlateau of float * float * float // Plateau trapezoidal distribution
+        | UShape of float * float // U-shape distribution (min, max)
+        | Rayleigh of float // Rayleigh distribution (scale parameter σ)
+        | LogNormal of float * float // Log-normal distribution (μ, σ)
+        | InvSine of float * float // Inverse sine distribution (min, max)
+        | Sample of float array // Empirical distribution from samples
+        | Bootstrap of int * float array // Bootstrap sampling distribution
+        | BootstrapStruct of math.BootstrapSamples // Bootstrap samples structure
 
-    // 计算分布的均值 / Calculate distribution mean
+    // Calculate distribution mean
     let mean dist =
         match dist with
-        | Uniform(a, b) -> (a + b) / 2.0 // 均匀分布均值 / Uniform distribution mean
-        | Normal(mu, _) -> mu // 正态分布均值 / Normal distribution mean
-        | Triangular(min, mode, max) -> (min + mode + max) / 3.0 // 三角分布均值 / Triangular mean
-        | Trapezoidal(a, b, c, d) -> (a + b + c + d) / 4.0 // 梯形分布均值 / Trapezoidal mean
-        | TrapezoidalPlateau(a, b, plateau) -> (a + b) / 2.0 // 平台梯形均值 / Plateau trapezoidal mean (symmetric)
-        | UShape(min, max) -> (min + max) / 2.0 // U型分布均值 / U-shape distribution mean
-        | Rayleigh(sigma) -> sigma * sqrt (MathHelpers.pi / 2.0) // 瑞利分布均值 / Rayleigh distribution mean
-        | LogNormal(mu, sigma) -> exp (mu + sigma * sigma / 2.0) // 对数正态分布均值 / Log-normal mean
-        | InvSine(min, max) -> (min + max) / 2.0 // 反正弦分布均值 / Inverse sine distribution mean
-        | Sample(samples) -> Array.average samples // 样本分布均值 / Sample distribution mean
-        | Bootstrap(n, samples) -> // Bootstrap抽样均值 / Bootstrap sampling mean
-            BootstrapSamples(n, samples).Mean()
-        | BootstrapStruct(bs) -> // Bootstrap样本结构均值 / Bootstrap samples structure mean
+        | Uniform(a, b) -> (a + b) / 2.0 // Uniform distribution mean
+        | Normal(mu, _) -> mu // Normal distribution mean
+        | Triangular(min, mode, max) -> (min + mode + max) / 3.0 // Triangular mean
+        | Trapezoidal(a, b, c, d) -> (a + b + c + d) / 4.0 // Trapezoidal mean
+        | TrapezoidalPlateau(a, b, plateau) -> (a + b) / 2.0 // Plateau trapezoidal mean (symmetric)
+        | UShape(min, max) -> (min + max) / 2.0 // U-shape distribution mean
+        | Rayleigh(sigma) -> sigma * sqrt (math.MathHelpers.pi / 2.0) // Rayleigh distribution mean
+        | LogNormal(mu, sigma) -> exp (mu + sigma * sigma / 2.0) // Log-normal mean
+        | InvSine(min, max) -> (min + max) / 2.0 // Inverse sine distribution mean
+        | Sample(samples) -> Array.average samples // Sample distribution mean
+        | Bootstrap(n, samples) -> // Bootstrap sampling mean
+            math.BootstrapSamples(n, samples).Mean()
+        | BootstrapStruct(bs) -> // Bootstrap samples structure mean
             bs.Mean()
 
-    // 计算分布的标准差 / Calculate distribution standard deviation
+    // Calculate distribution standard deviation
     let stdev dist =
         match dist with
-        | Uniform(a, b) -> (b - a) / (2.0 * sqrt (3.0)) // 均匀分布标准差 / Uniform distribution std
-        | Normal(_, sigma) -> sigma // 正态分布标准差 / Normal distribution std
+        | Uniform(a, b) -> (b - a) / (2.0 * sqrt (3.0)) // Uniform distribution std
+        | Normal(_, sigma) -> sigma // Normal distribution std
         | Triangular(min, mode, max) ->
             sqrt (
                 (min * min + mode * mode + max * max - min * mode - min * max - mode * max)
                 / 6.0
-            ) // 三角分布标准差 / Triangular std
-        | Trapezoidal(a, b, c, d) -> // 梯形分布标准差 / Trapezoidal std
+            ) // Triangular std
+        | Trapezoidal(a, b, c, d) -> // Trapezoidal std
             // Correct formula for trapezoidal distribution variance
             let mean_val = (a + b + c + d) / 4.0
 
@@ -131,61 +127,59 @@ module metro =
                 / 18.0
 
             sqrt (abs (var)) // Use abs to avoid NaN from numerical errors
-        | TrapezoidalPlateau(a, b, plateau) -> // 平台梯形标准差 / Plateau trapezoidal std
+        | TrapezoidalPlateau(a, b, plateau) -> // Plateau trapezoidal std
             // For trapezoid with plateau length, variance calculation
             let total_width = b - a
             let slope_width = (total_width - plateau) / 2.0
             // Variance for trapezoidal distribution with flat plateau
             let var = (total_width * total_width - plateau * plateau) / 18.0
             sqrt (abs (var))
-        | UShape(min, max) -> (max - min) / (2.0 * sqrt (2.0)) // U型分布标准差 / U-shape distribution std
-        | Rayleigh(sigma) -> sigma * sqrt (2.0 - MathHelpers.pi / 2.0) // 瑞利分布标准差 / Rayleigh distribution std
-        | LogNormal(mu, sigma) -> sqrt ((exp (sigma * sigma) - 1.0) * exp (2.0 * mu + sigma * sigma)) // 对数正态分布标准差 / Log-normal std
-        | InvSine(min, max) -> (max - min) / (2.0 * sqrt (2.0)) // 反正弦分布标准差 / Inverse sine std
-        | Sample(samples) -> // 样本分布标准差 / Sample distribution std
+        | UShape(min, max) -> (max - min) / (2.0 * sqrt (2.0)) // U-shape distribution std
+        | Rayleigh(sigma) -> sigma * sqrt (2.0 - math.MathHelpers.pi / 2.0) // Rayleigh distribution std
+        | LogNormal(mu, sigma) -> sqrt ((exp (sigma * sigma) - 1.0) * exp (2.0 * mu + sigma * sigma)) // Log-normal std
+        | InvSine(min, max) -> (max - min) / (2.0 * sqrt (2.0)) // Inverse sine std
+        | Sample(samples) -> // Sample distribution std
             let mean = Array.average samples
             sqrt (Array.average (Array.map (fun x -> (x - mean) ** 2.0) samples))
-        | Bootstrap(n, samples) -> // Bootstrap抽样标准差 / Bootstrap sampling std
-            BootstrapSamples(n, samples).Stdev()
-        | BootstrapStruct(bs) -> // Bootstrap样本结构标准差 / Bootstrap samples structure std
+        | Bootstrap(n, samples) -> // Bootstrap sampling std
+            math.BootstrapSamples(n, samples).Stdev()
+        | BootstrapStruct(bs) -> // Bootstrap samples structure std
             bs.Stdev()
-    // 误差函数 (Abramowitz & Stegun 近似) / Error function (Abramowitz & Stegun approximation)
+    // Evaluate polynomial using Horner's method
+    let evalPolyHorner t (coeffs: float list) =
+        List.foldBack (fun c acc -> c + t * acc) coeffs 0.0
+
+    // Error function (Abramowitz & Stegun approximation)
     let erf z =
         let t = 1.0 / (1.0 + 0.5 * abs z)
 
-        // 使用 Horner 法计算 Abramowitz & Stegun 近似中的多项式部分
-        let poly =
-            let horner (coeffs: float list) = List.foldBack (fun c acc -> c + t * acc) coeffs 0.0
-            horner [ 1.00002368;
-                     0.37409196;
-                     0.09678418;
-                    -0.18628806;
-                     0.27886807;
-                    -1.13520398;
-                     1.48851587;
-                    -0.82215223;
-                     0.17087277 ]
+        // Using Horner's method to calculate polynomial part of Abramowitz & Stegun approximation
+        let poly = evalPolyHorner t
+                      [ 1.00002368
+                        0.37409196
+                        0.09678418
+                        -0.18628806
+                        0.27886807
+                        -1.13520398
+                        1.48851587
+                        -0.82215223
+                        0.17087277 ]
 
-        let tau =
-            t * exp (-z * z - 1.26551223 + t * poly)
+        let tau = t * exp (-z * z - 1.26551223 + t * poly)
 
         if z >= 0.0 then 1.0 - tau else tau - 1.0
 
-    // 计算累积分布函数 (CDF) / Calculate cumulative distribution function
-    // 计算累积分布函数 (CDF) / Calculate cumulative distribution function
+    // Calculate cumulative distribution function
     let cdf dist x =
         match dist with
-        | Uniform(a, b) -> // 均匀分布CDF / Uniform distribution CDF
-            if x < a then
-                0.0
-            elif x > b then
-                1.0
-            else
-                (x - a) / (b - a)
-        | Normal(mu, sigma) -> // 正态分布CDF / Normal distribution CDF
+        | Uniform(a, b) -> // Uniform distribution CDF
+            if x < a then 0.0
+            elif x > b then 1.0
+            else (x - a) / (b - a)
+        | Normal(mu, sigma) -> // Normal distribution CDF
             let z = (x - mu) / sigma
             0.5 * (1.0 + erf (z / sqrt (2.0)))
-        | Triangular(min, mode, max) -> // 三角分布CDF / Triangular distribution CDF
+        | Triangular(min, mode, max) -> // Triangular distribution CDF
             if x < min then
                 0.0
             elif x > max then
@@ -194,7 +188,7 @@ module metro =
                 (x - min) * (x - min) / ((max - min) * (mode - min))
             else
                 1.0 - (max - x) * (max - x) / ((max - min) * (max - mode))
-        | Trapezoidal(a, b, c, d) -> // 梯形分布CDF / Trapezoidal distribution CDF
+        | Trapezoidal(a, b, c, d) -> // Trapezoidal distribution CDF
             if x < a then
                 0.0
             elif x > d then
@@ -208,7 +202,7 @@ module metro =
             else
                 // Falling part: CDF = 1 - (d-x)² / ((d-c)(d+c-b-a))
                 1.0 - (d - x) * (d - x) / ((d - c) * (d + c - b - a))
-        | TrapezoidalPlateau(a, b, plateau) -> // 平台梯形分布CDF / Plateau trapezoidal CDF
+        | TrapezoidalPlateau(a, b, plateau) -> // Plateau trapezoidal CDF
             if x < a then
                 0.0
             elif x > b then
@@ -231,27 +225,27 @@ module metro =
                     let triangle_area = h * slope_width / 2.0
                     let rect_width = x - left_slope_end
                     triangle_area + h * rect_width
-        | UShape(min, max) -> // U型分布CDF / U-shape distribution CDF
+        | UShape(min, max) -> // U-shape distribution CDF
             if x < min || x > max then
                 (if x < min then 0.0 else 1.0)
             else
-                let u = (x - min) / (max - min) in (2.0 / MathHelpers.pi) * asin (sqrt (u))
-        | Rayleigh(sigma) -> // 瑞利分布CDF / Rayleigh distribution CDF
+                let u = (x - min) / (max - min) in (2.0 / math.MathHelpers.pi) * asin (sqrt (u))
+        | Rayleigh(sigma) -> // Rayleigh distribution CDF
             if x < 0.0 then
                 0.0
             else
                 1.0 - exp (-x * x / (2.0 * sigma * sigma))
-        | LogNormal(mu, sigma) -> // 对数正态分布CDF / Log-normal distribution CDF
+        | LogNormal(mu, sigma) -> // Log-normal distribution CDF
             if x <= 0.0 then
                 0.0
             else
                 let z = (log (x) - mu) / sigma in 0.5 * (1.0 + erf (z / sqrt (2.0)))
-        | InvSine(min, max) -> // 反正弦分布CDF / Inverse sine distribution CDF
+        | InvSine(min, max) -> // Inverse sine distribution CDF
             if x < min || x > max then
                 (if x < min then 0.0 else 1.0)
             else
-                let u = (x - min) / (max - min) in (2.0 / MathHelpers.pi) * asin (sqrt (u))
-        | Sample(samples) -> // 样本分布CDF / Sample distribution CDF
+                let u = (x - min) / (max - min) in (2.0 / math.MathHelpers.pi) * asin (sqrt (u))
+        | Sample(samples) -> // Sample distribution CDF
             let n = float (Array.length samples)
 
             if n = 0.0 then
@@ -259,34 +253,31 @@ module metro =
             else
                 let count = Array.filter (fun v -> v <= x) samples |> Array.length |> float
                 count / n
-        | Bootstrap(n, samples) -> // Bootstrap抽样CDF / Bootstrap sampling CDF
-            let bootstrapSamples = BootstrapSamples(n, samples).Sample()
+        | Bootstrap(n, samples) -> // Bootstrap sampling CDF
+            let bootstrapSamples = math.BootstrapSamples(n, samples).Sample()
             let count = Array.filter (fun v -> v <= x) bootstrapSamples |> Array.length |> float
             count / float bootstrapSamples.Length
-        | BootstrapStruct(bs) -> // Bootstrap样本结构CDF / Bootstrap samples structure CDF
+        | BootstrapStruct(bs) -> // Bootstrap samples structure CDF
             let sampled = bs.Sample()
             let count = Array.filter (fun v -> v <= x) sampled |> Array.length |> float
             count / float sampled.Length
 
-    // 计算概率密度函数 (PDF) / Calculate probability density function
+    // Calculate probability density function
     let pdf dist x =
         match dist with
-        | Uniform(a, b) -> // 均匀分布PDF / Uniform distribution PDF
-            if x < a || x > b then
-                0.0
-            else
-                1.0 / (b - a)
-        | Normal(mu, sigma) -> // 正态分布PDF / Normal distribution PDF
+        | Uniform(a, b) -> // Uniform distribution PDF
+            if x < a || x > b then 0.0 else 1.0 / (b - a)
+        | Normal(mu, sigma) -> // Normal distribution PDF
             let z = (x - mu) / sigma
-            (1.0 / (sigma * sqrt (2.0 * MathHelpers.pi))) * exp (-0.5 * z * z)
-        | Triangular(min, mode, max) -> // 三角分布PDF / Triangular distribution PDF
+            (1.0 / (sigma * sqrt (2.0 * math.MathHelpers.pi))) * exp (-0.5 * z * z)
+        | Triangular(min, mode, max) -> // Triangular distribution PDF
             if x < min || x > max then
                 0.0
             elif x < mode then
                 2.0 * (x - min) / ((max - min) * (mode - min))
             else
                 2.0 * (max - x) / ((max - min) * (max - mode))
-        | Trapezoidal(a, b, c, d) -> // 梯形分布PDF / Trapezoidal distribution PDF
+        | Trapezoidal(a, b, c, d) -> // Trapezoidal distribution PDF
             if x < a || x > d then
                 0.0
             elif x <= b then
@@ -298,7 +289,7 @@ module metro =
             else
                 // Falling part: PDF = 2(d-x) / ((d-c)(d+c-b-a))
                 2.0 * (d - x) / ((d - c) * (d + c - b - a))
-        | TrapezoidalPlateau(a, b, plateau) -> // 平台梯形分布PDF / Plateau trapezoidal PDF
+        | TrapezoidalPlateau(a, b, plateau) -> // Plateau trapezoidal PDF
             if x < a || x > b then
                 0.0
             else
@@ -317,28 +308,28 @@ module metro =
                 else
                     // Flat plateau: PDF = h
                     h
-        | UShape(min, max) -> // U型分布PDF / U-shape distribution PDF
+        | UShape(min, max) -> // U-shape distribution PDF
             if x < min || x > max then
                 0.0
             else
-                let u = (x - min) / (max - min) in 1.0 / (MathHelpers.pi * sqrt (u * (1.0 - u)) * (max - min))
-        | Rayleigh(sigma) -> // 瑞利分布PDF / Rayleigh distribution PDF
+                let u = (x - min) / (max - min) in 1.0 / (math.MathHelpers.pi * sqrt (u * (1.0 - u)) * (max - min))
+        | Rayleigh(sigma) -> // Rayleigh distribution PDF
             if x < 0.0 then
                 0.0
             else
                 (x / (sigma * sigma)) * exp (-x * x / (2.0 * sigma * sigma))
-        | LogNormal(mu, sigma) -> // 对数正态分布PDF / Log-normal distribution PDF
+        | LogNormal(mu, sigma) -> // Log-normal distribution PDF
             if x <= 0.0 then
                 0.0
             else
-                (1.0 / (x * sigma * sqrt (2.0 * MathHelpers.pi)))
+                (1.0 / (x * sigma * sqrt (2.0 * math.MathHelpers.pi)))
                 * exp (-0.5 * ((log (x) - mu) / sigma) ** 2.0)
-        | InvSine(min, max) -> // 反正弦分布PDF / Inverse sine distribution PDF
+        | InvSine(min, max) -> // Inverse sine distribution PDF
             if x < min || x > max then
                 0.0
             else
-                let u = (x - min) / (max - min) in 1.0 / (MathHelpers.pi * sqrt (u * (1.0 - u)) * (max - min))
-        | Sample(samples) -> // 样本分布PDF (使用核密度估计) / Sample distribution PDF (using kernel density estimation)
+                let u = (x - min) / (max - min) in 1.0 / (math.MathHelpers.pi * sqrt (u * (1.0 - u)) * (max - min))
+        | Sample(samples) -> // Sample distribution PDF (using kernel density estimation)
             let n = float (Array.length samples)
 
             if n = 0.0 then
@@ -351,15 +342,15 @@ module metro =
                         )
                     )
 
-                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman经验法则 / Silverman's rule of thumb
+                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman's rule of thumb
 
                 let kernel u =
-                    (1.0 / sqrt (2.0 * MathHelpers.pi)) * exp (-0.5 * u * u) // 高斯核 / Gaussian kernel
+                    (1.0 / sqrt (2.0 * math.MathHelpers.pi)) * exp (-0.5 * u * u) // Gaussian kernel
 
                 let density = Array.sum (Array.map (fun v -> kernel ((x - v) / bandwidth)) samples)
                 density / (n * bandwidth)
-        | Bootstrap(n, samples) -> // Bootstrap抽样PDF / Bootstrap sampling PDF
-            let bootstrapSamples = BootstrapSamples(n, samples).Sample()
+        | Bootstrap(n, samples) -> // Bootstrap sampling PDF
+            let bootstrapSamples = math.BootstrapSamples(n, samples).Sample()
 
             if bootstrapSamples.Length = 0 then
                 failwith "Bootstrap distribution has no samples"
@@ -373,16 +364,16 @@ module metro =
                         )
                     )
 
-                let bandwidth = 1.06 * sampleStdev * (float bootstrapSamples.Length ** (-1.0 / 5.0)) // Silverman经验法则 / Silverman's rule of thumb
+                let bandwidth = 1.06 * sampleStdev * (float bootstrapSamples.Length ** (-1.0 / 5.0)) // Silverman's rule of thumb
 
                 let kernel u =
-                    (1.0 / sqrt (2.0 * MathHelpers.pi)) * exp (-0.5 * u * u)
+                    (1.0 / sqrt (2.0 * math.MathHelpers.pi)) * exp (-0.5 * u * u)
 
                 let density =
                     Array.sum (Array.map (fun v -> kernel ((x - v) / bandwidth)) bootstrapSamples)
 
                 density / (float bootstrapSamples.Length * bandwidth)
-        | BootstrapStruct(bs) -> // Bootstrap样本结构PDF / Bootstrap samples structure PDF
+        | BootstrapStruct(bs) -> // Bootstrap samples structure PDF
             let sampled = bs.Sample()
             let n = float (Array.length sampled)
 
@@ -396,29 +387,29 @@ module metro =
                         )
                     )
 
-                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman经验法则 / Silverman's rule of thumb
+                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman's rule of thumb
 
                 let kernel u =
-                    (1.0 / sqrt (2.0 * MathHelpers.pi)) * exp (-0.5 * u * u)
+                    (1.0 / sqrt (2.0 * math.MathHelpers.pi)) * exp (-0.5 * u * u)
 
                 let density = Array.sum (Array.map (fun v -> kernel ((x - v) / bandwidth)) sampled)
                 density / (n * bandwidth)
 
-    // 各分布的解析逆累积分布函数 / Analytical inverse CDF for each distribution
+    // Analytical inverse CDF for each distribution
     let invCdf dist p =
         match dist with
-        | Uniform(a, b) -> // 均匀分布逆CDF / Uniform distribution inverse CDF
-            a + p * (b - a) // 线性插值 / Linear interpolation
-        | Normal(mu, sigma) -> // 正态分布逆CDF / Normal distribution inverse CDF
-            mu + sigma * MathHelpers.invStandardNormal (p)
-        | Triangular(min, mode, max) -> // 三角分布逆CDF / Triangular distribution inverse CDF
+        | Uniform(a, b) -> // Uniform distribution inverse CDF
+            a + p * (b - a) // Linear interpolation
+        | Normal(mu, sigma) -> // Normal distribution inverse CDF
+            mu + sigma * math.MathHelpers.invStandardNormal (p)
+        | Triangular(min, mode, max) -> // Triangular distribution inverse CDF
             let fc = (mode - min) / (max - min)
 
             if p < fc then
                 min + sqrt (p * (max - min) * (mode - min))
             else
                 max - sqrt ((1.0 - p) * (max - min) * (max - mode))
-        | Trapezoidal(a, b, c, d) -> // 梯形分布逆CDF / Trapezoidal distribution inverse CDF
+        | Trapezoidal(a, b, c, d) -> // Trapezoidal distribution inverse CDF
             let h = 2.0 / (d + c - b - a) // Height of trapezoid
             let area1 = (b - a) * h / 2.0 // Area of rising triangle
             let area2 = (c - b) * h // Area of flat rectangle
@@ -434,7 +425,7 @@ module metro =
             else
                 // Inverse of falling part
                 d - sqrt ((1.0 - p) * (d - c) * (d + c - b - a))
-        | TrapezoidalPlateau(a, b, plateau) -> // 平台梯形分布逆CDF / Plateau trapezoidal inverse CDF
+        | TrapezoidalPlateau(a, b, plateau) -> // Plateau trapezoidal inverse CDF
             let total_width = b - a
             let slope_width = (total_width - plateau) / 2.0
             let left_slope_end = a + slope_width
@@ -455,17 +446,17 @@ module metro =
             else
                 // Inverse of falling part
                 b - sqrt (2.0 * (1.0 - p) * slope_width / h)
-        | UShape(min, max) -> // U型分布逆CDF / U-shape distribution inverse CDF
-            let u = sin (p * MathHelpers.pi / 2.0) ** 2.0
+        | UShape(min, max) -> // U-shape distribution inverse CDF
+            let u = sin (p * math.MathHelpers.pi / 2.0) ** 2.0
             min + u * (max - min)
-        | Rayleigh(sigma) -> // 瑞利分布逆CDF / Rayleigh distribution inverse CDF
+        | Rayleigh(sigma) -> // Rayleigh distribution inverse CDF
             sigma * sqrt (-2.0 * log (1.0 - p))
-        | LogNormal(mu, sigma) -> // 对数正态分布逆CDF / Log-normal distribution inverse CDF
-            exp (mu + sigma * MathHelpers.invStandardNormal (p))
-        | InvSine(min, max) -> // 反正弦分布逆CDF / Inverse sine distribution inverse CDF
-            let u = sin (p * MathHelpers.pi / 2.0) ** 2.0
+        | LogNormal(mu, sigma) -> // Log-normal distribution inverse CDF
+            exp (mu + sigma * math.MathHelpers.invStandardNormal (p))
+        | InvSine(min, max) -> // Inverse sine distribution inverse CDF
+            let u = sin (p * math.MathHelpers.pi / 2.0) ** 2.0
             min + u * (max - min)
-        | Sample(samples) -> // 样本分布逆CDF (分位数估计) / Sample distribution inverse CDF (quantile estimation)
+        | Sample(samples) -> // Sample distribution inverse CDF (quantile estimation)
             let n = float (Array.length samples)
 
             if n = 0.0 then
@@ -483,8 +474,8 @@ module metro =
 
                     sortedSamples.[lowerIndex] * (1.0 - weight)
                     + sortedSamples.[upperIndex] * weight
-        | Bootstrap(n, samples) -> // Bootstrap抽样逆CDF / Bootstrap sampling inverse CDF
-            let bootstrapSamples = BootstrapSamples(n, samples).Sample()
+        | Bootstrap(n, samples) -> // Bootstrap sampling inverse CDF
+            let bootstrapSamples = math.BootstrapSamples(n, samples).Sample()
             let n = float (Array.length bootstrapSamples)
 
             if n = 0.0 then
@@ -502,7 +493,7 @@ module metro =
 
                     sortedSamples.[lowerIndex] * (1.0 - weight)
                     + sortedSamples.[upperIndex] * weight
-        | BootstrapStruct(bs) -> // Bootstrap样本结构逆CDF / Bootstrap samples structure inverse CDF
+        | BootstrapStruct(bs) -> // Bootstrap samples structure inverse CDF
             let sampled = bs.Sample()
             let n = float (Array.length sampled)
 
@@ -522,55 +513,51 @@ module metro =
                     sortedSamples.[lowerIndex] * (1.0 - weight)
                     + sortedSamples.[upperIndex] * weight
 
-    // 各分布的解析逆概率密度函数 (在有意义的情况下) / Analytical inverse PDF for each distribution (where meaningful)
+    // Analytical inverse PDF for each distribution (where meaningful)
     let invPdf dist p =
         match dist with
-        | Uniform(mu, sigma) -> // 均匀分布逆PDF / Uniform distribution inverse PDF
+        | Uniform(mu, sigma) -> // Uniform distribution inverse PDF
             let pdfValue = 1.0 / (2.0 * sqrt (3.0) * sigma)
 
             if abs (p - pdfValue) < 1e-10 then
-                mu // 在均值处唯一解 / Only one solution at the mean
+                mu // Only one solution at the mean
             else
                 failwith "No solution: uniform PDF is constant"
-        | Normal(a, b) -> // 正态分布逆PDF / Normal distribution inverse PDF
+        | Normal(a, b) -> // Normal distribution inverse PDF
             let mu = (a + b) / 2.0
             let sigma = (b - a) / 4.0
-            let maxPdf = 1.0 / (sigma * sqrt (2.0 * MathHelpers.pi))
+            let maxPdf = 1.0 / (sigma * sqrt (2.0 * math.MathHelpers.pi))
 
             if p > maxPdf then
                 failwith "PDF value too high for normal distribution"
             elif abs (p - maxPdf) < 1e-10 then
-                mu // 在峰值处 / At the peak
+                mu // At the peak
             else
-                // 解方程: p = (1/(σ√(2π))) * exp(-0.5 * ((x-μ)/σ)²)
                 // Solve: p = (1/(σ√(2π))) * exp(-0.5 * ((x-μ)/σ)²)
-                let z = sqrt (-2.0 * log (p * sigma * sqrt (2.0 * MathHelpers.pi)))
-                mu + sigma * z // 返回正解 / Return positive solution (could also return mu - sigma * z)
-        | Triangular(min, mode, max) -> // 三角分布逆PDF / Triangular distribution inverse PDF
+                let z = sqrt (-2.0 * log (p * sigma * sqrt (2.0 * math.MathHelpers.pi)))
+                mu + sigma * z // Return positive solution (could also return mu - sigma * z)
+        | Triangular(min, mode, max) -> // Triangular distribution inverse PDF
             let maxPdf = 2.0 / (max - min)
 
             if p > maxPdf then
                 failwith "PDF value too high for triangular distribution"
             elif abs (p - maxPdf) < 1e-10 then
-                mode // 在众数处 / At the mode
+                mode // At the mode
             else
-                // 上升部分: p = 2(x-min)/((max-min)(mode-min))
                 // For ascending part: p = 2(x-min)/((max-min)(mode-min))
                 let x1 = min + p * (max - min) * (mode - min) / 2.0
 
                 if x1 <= mode then
                     x1
                 else
-                    // 下降部分: p = 2(max-x)/((max-min)(max-mode))
                     // For descending part: p = 2(max-x)/((max-min)(max-mode))
                     max - p * (max - min) * (max - mode) / 2.0
-        | Rayleigh(sigma) -> // 瑞利分布逆PDF / Rayleigh distribution inverse PDF
+        | Rayleigh(sigma) -> // Rayleigh distribution inverse PDF
             if p <= 0.0 then
                 failwith "PDF value must be positive for Rayleigh distribution"
             else
-                // 解方程: p = (x/σ²) * exp(-x²/(2σ²))
                 // Solve: p = (x/σ²) * exp(-x²/(2σ²))
-                // 一般情况需要数值方法，使用牛顿-拉夫逊法 / This requires numerical methods for general case, using Newton-Raphson
+                // This requires numerical methods for general case, using Newton-Raphson
                 let rec solve x_guess iter =
                     if iter > 20 then
                         x_guess
@@ -667,7 +654,7 @@ module metro =
                 let maxSample = Array.max samples
                 binarySearch (minSample - 3.0 * bandwidth) (maxSample + 3.0 * bandwidth)
         | Bootstrap(n, samples) ->
-            let bootstrapSamples = BootstrapSamples(n, samples).Sample()
+            let bootstrapSamples = math.BootstrapSamples(n, samples).Sample()
             let n = float (Array.length bootstrapSamples)
 
             if n = 0.0 then
@@ -682,10 +669,10 @@ module metro =
                         )
                     )
 
-                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman经验法则 / Silverman's rule of thumb
+                let bandwidth = 1.06 * sampleStdev * (n ** (-1.0 / 5.0)) // Silverman's rule of thumb
 
                 let kernel u =
-                    (1.0 / sqrt (2.0 * MathHelpers.pi)) * exp (-0.5 * u * u)
+                    (1.0 / sqrt (2.0 * math.MathHelpers.pi)) * exp (-0.5 * u * u)
 
                 let rec binarySearch low high =
                     if high - low < 1e-6 then
@@ -767,32 +754,38 @@ module metro =
             binarySearch (m - 3.0 * s) (m + 3.0 * s)
 
 
-    // 计算给定置信水平p的扩展不确定度 / Returns the expanded uncertainty for a given level of confidence p
+    // Returns the expanded uncertainty for a given level of confidence p
     let expandedUncertainty dist p =
-        let centeredPercentile = (1.0 + p) / 2.0 // 中心覆盖区间 / For centered coverage interval
+        let centeredPercentile = (1.0 + p) / 2.0 // For centered coverage interval
         let upperQuantile = invCdf dist centeredPercentile
         let distMean = mean dist
         // let distStdev = stdev dist
         abs (upperQuantile - distMean)
 
-    // 计算覆盖因子kp / Calculate coverage factor kp
+    // Calculate coverage factor kp
     let kp dist p =
         expandedUncertainty dist p / (stdev dist)
 
-    // 计算分位数 / Calculate quantile
+    // Calculate quantile
     let quantile dist p = invCdf dist (1.0 - p)
 
-    // 计算双侧分位数 / Calculate two-sided quantile
+    // Calculate two-sided quantile
     let quantileTwoSided dist p =
         let alpha = p / 2.0
         let lower = invCdf dist alpha
         let upper = invCdf dist (1.0 - alpha)
         (lower, upper)
 
+module measurement =
+    open math
+    
+    // Add a global random number generator
+    let private globalRandom = System.Random()
+    
     // 数值类型 - 支持精确值和分布的混合计算 / Value type - supporting mixed calculations of exact values and distributions
     type Value =
         | Exact of float // 精确数值 / Exact numerical value
-        | Distribution of Distribution // 概率分布 / Probability distribution
+        | Distribution of stat.Distribution // 概率分布 / Probability distribution
         | Addition of Value * Value // 加法运算 / Addition operation
         | Bias of Value * float // 偏差修正 / Bias correction
         | Multiplication of Value * Value // 乘法运算 / Multiplication operation
@@ -832,7 +825,7 @@ module metro =
     let absVal v = Abs v // 绝对值 / Absolute value
     let sqrtVal v = Sqrt v // 平方根 / Square root
     let lnVal v = Ln v // 自然对数 / Natural logarithm
-    let expVal v = Exp v // 指数 / Exponential
+    let expVal v = Exp v // 指�� / Exponential
     let sinVal v = Sin v // 正弦 / Sine
     let cosVal v = Cos v // 余弦 / Cosine
     let tanVal v = Tan v // 正切 / Tangent
@@ -895,19 +888,16 @@ module metro =
         | Exact v -> v // 精确值直接返回 / Return exact value directly
         | Distribution dist -> // 从分布中抽样 / Sample from distribution
             match dist with
-            | Uniform(mu, sigma) -> // 均匀分布抽样 / Uniform distribution sampling
-                let a = mu - sqrt (3.0) * sigma
-                let b = mu + sqrt (3.0) * sigma
+            | stat.Uniform(a, b) -> // 均匀分布抽样 / Uniform distribution sampling
+                // Direct uniform sampling between lower bound a and upper bound b
                 let u = r.NextDouble()
                 a + u * (b - a)
-            | Normal(a, b) -> // 正态分布抽样 / Normal distribution sampling
-                let mu = (a + b) / 2.0
-                let sigma = (b - a) / 4.0
+            | stat.Normal(mu, sigma) -> // 正态分布抽样 / Normal distribution sampling
                 // Box-Muller变换 / Box-Muller transform
                 let u1 = r.NextDouble()
                 let u2 = r.NextDouble()
                 mu + sigma * sqrt (-2.0 * log (u1)) * cos (2.0 * MathHelpers.pi * u2)
-            | Triangular(min, mode, max) -> // 三角分布抽样 / Triangular distribution sampling
+            | stat.Triangular(min, mode, max) -> // 三角分布抽样 / Triangular distribution sampling
                 let u = r.NextDouble()
                 let fc = (mode - min) / (max - min)
 
@@ -915,7 +905,7 @@ module metro =
                     min + sqrt (u * (max - min) * (mode - min))
                 else
                     max - sqrt ((1.0 - u) * (max - min) * (max - mode))
-            | Trapezoidal(a, b, c, d) -> // 梯形分布抽样 / Trapezoidal distribution sampling
+            | stat.Trapezoidal(a, b, c, d) -> // 梯形分布抽样 / Trapezoidal distribution sampling
                 let u = r.NextDouble()
                 let p1 = (b - a) / (2.0 * (d - a))
                 let p2 = (c - a) / (d - a)
@@ -925,32 +915,32 @@ module metro =
                 elif u <= p2 then a + u * (d - a)
                 elif u <= p3 then a + u * (d - a)
                 else d - sqrt (2.0 * (1.0 - u) * (d - c) * (d - b))
-            | TrapezoidalPlateau(a, b, plateau) -> // 平台梯形分布抽样 / Plateau trapezoidal sampling
+            | stat.TrapezoidalPlateau(a, b, plateau) -> // 平台梯形分布抽样 / Plateau trapezoidal sampling
                 let u = r.NextDouble()
-                invCdf (TrapezoidalPlateau(a, b, plateau)) u // Use inverse CDF sampling
-            | UShape(min, max) -> // U型分布抽样 / U-shape distribution sampling
+                stat.invCdf (stat.TrapezoidalPlateau(a, b, plateau)) u // Use inverse CDF sampling
+            | stat.UShape(min, max) -> // U型分布抽样 / U-shape distribution sampling
                 let u = r.NextDouble()
                 let v = sin (u * MathHelpers.pi / 2.0) ** 2.0
                 min + v * (max - min)
-            | Rayleigh(sigma) -> // 瑞利分布抽样 / Rayleigh distribution sampling
+            | stat.Rayleigh(sigma) -> // 瑞利分布抽样 / Rayleigh distribution sampling
                 let u = r.NextDouble()
                 sigma * sqrt (-2.0 * log (1.0 - u))
-            | LogNormal(mu, sigma) -> // 对数正态分布抽样 / Log-normal distribution sampling
+            | stat.LogNormal(mu, sigma) -> // 对数正态分布抽样 / Log-normal distribution sampling
                 let u1 = r.NextDouble()
                 let u2 = r.NextDouble()
                 let z = sqrt (-2.0 * log (u1)) * cos (2.0 * MathHelpers.pi * u2)
                 exp (mu + sigma * z)
-            | InvSine(min, max) -> // 反正弦分布抽样 / Inverse sine distribution sampling
+            | stat.InvSine(min, max) -> // 反正弦分布抽样 / Inverse sine distribution sampling
                 let u = r.NextDouble()
                 let v = sin (u * MathHelpers.pi / 2.0) ** 2.0
                 min + v * (max - min)
-            | Sample(samples) -> // 样本分布抽样 / Sample distribution sampling
+            | stat.Sample(samples) -> // 样本分布抽样 / Sample distribution sampling
                 if samples.Length = 0 then
                     failwith "Sample distribution has no samples"
                 else
                     let index = r.Next(0, samples.Length)
                     samples.[index]
-            | Bootstrap(n, samples) -> // Bootstrap抽样 / Bootstrap sampling
+            | stat.Bootstrap(n, samples) -> // Bootstrap抽样 / Bootstrap sampling
                 if samples.Length = 0 then
                     failwith "Bootstrap distribution has no samples"
                 else
@@ -961,7 +951,7 @@ module metro =
                     else
                         let index = r.Next(0, bootstrapSamples.Length)
                         bootstrapSamples.[index]
-            | BootstrapStruct(bs) -> // Bootstrap样本结构抽样 / Bootstrap samples structure sampling
+            | stat.BootstrapStruct(bs) -> // Bootstrap样本结构抽样 / Bootstrap samples structure sampling
                 let sampled = bs.Sample()
                 let index = r.Next(0, sampled.Length)
                 sampled.[index]
@@ -997,11 +987,105 @@ module metro =
 
     // 蒙特卡洛求值函数 / Monte Carlo evaluation function
     let eval (value: Value) numSamples =
-        let r = System.Random()
-        let samples = Array.init numSamples (fun _ -> sample r value)
-        Sample(samples)
+        let samples = Array.init numSamples (fun _ -> sample globalRandom value)
+        stat.Sample(samples)
 
     // Value类型扩展方法 / Value type extension method
     type Value with
-
+        // define a static property for default number of samples
         member this.Eval(numSamples: int) = eval this numSamples
+
+        member this.Mean(?numSamples: int) =
+            match this with
+            | Exact v -> v
+            | Distribution dist -> stat.mean dist
+            | _ -> (stat.mean (eval this (defaultArg numSamples 10000)))
+
+        member this.StDev(?numSamples: int) =
+            match this with
+            | Exact _ -> 0.0
+            | Distribution dist -> stat.stdev dist
+            | _ -> (stat.stdev (eval this (defaultArg numSamples 10000)))
+
+        member this.ExpandedUncertainty(p: float, ?numSamples: int) =
+            match this with
+            | Exact _ -> 0.0
+            | Distribution dist -> stat.expandedUncertainty dist p
+            | _ -> (stat.expandedUncertainty (eval this (defaultArg numSamples 10000)) p)
+
+        member this.Kp(p: float, ?numSamples: int) =
+            match this with
+            | Exact _ -> 0.0
+            | Distribution dist -> stat.kp dist p
+            | _ -> (stat.kp (eval this (defaultArg numSamples 10000)) p)
+
+        member this.Quantile(p: float, ?numSamples: int) =
+            match this with
+            | Exact v -> v
+            | Distribution dist -> stat.quantile dist p
+            | _ -> (stat.quantile (eval this (defaultArg numSamples 10000)) p)
+
+        member this.QuantileTwoSided(p: float, ?numSamples: int) =
+            match this with
+            | Exact v -> (v, v)
+            | Distribution dist -> stat.quantileTwoSided dist p
+            | _ -> (stat.quantileTwoSided (eval this (defaultArg numSamples 10000)) p)
+
+        member this.InvPdf(p: float, ?numSamples: int) =
+            match this with
+            | Exact v ->
+                if abs v < 1e-10 then
+                    failwith "PDF is not defined for exact zero value"
+                else
+                    failwith "PDF is not defined for exact values"
+            | Distribution dist -> stat.invPdf dist p
+            | _ -> (stat.invPdf (eval this (defaultArg numSamples 10000)) p)
+
+        member this.InvCdf(p: float, ?numSamples: int) =
+            match this with
+            | Exact v -> v
+            | Distribution dist -> stat.invCdf dist p
+            | _ -> (stat.invCdf (eval this (defaultArg numSamples 10000)) p)
+
+        member this.Pdf(x: float, ?numSamples: int) =
+            match this with
+            | Exact v ->
+                if abs v < 1e-10 then
+                    failwith "PDF is not defined for exact zero value"
+                else
+                    failwith "PDF is not defined for exact values"
+            | Distribution dist -> stat.pdf dist x
+            | _ -> (stat.pdf (eval this (defaultArg numSamples 10000)) x)
+
+        member this.Cdf(x: float, ?numSamples: int) =
+            match this with
+            | Exact v ->
+                if abs v < 1e-10 then
+                    failwith "CDF is not defined for exact zero value"
+                else
+                    failwith "CDF is not defined for exact values"
+            | Distribution dist -> stat.cdf dist x
+            | _ -> (stat.cdf (eval this (defaultArg numSamples 10000)) x)
+
+    let uniform a b = Distribution(stat.Uniform(a, b)) // 创建均匀分布的Value实例 / Create a Value instance for uniform distribution
+    let norm mu sigma = Distribution(stat.Normal(mu, sigma)) // 创建正态分布的Value实例 / Create a Value instance for normal distribution
+
+    let triangular min mode max =
+        Distribution(stat.Triangular(min, mode, max)) // 创建三角分布的Value实例 / Create a Value instance for triangular distribution
+
+    let trapezoidal a b c d =
+        Distribution(stat.Trapezoidal(a, b, c, d)) // 创建梯形分布的Value实例 / Create a Value instance for trapezoidal distribution
+
+    let trapezoidalPlateau a b plateau =
+        Distribution(stat.TrapezoidalPlateau(a, b, plateau)) // 创建平台梯形分布的Value实例 / Create a Value instance for plateau trapezoidal distribution
+
+    let uShape min max = Distribution(stat.UShape(min, max)) // 创建U型分布的Value实例 / Create a Value instance for U-shape distribution
+    let rayleigh sigma = Distribution(stat.Rayleigh(sigma)) // 创建瑞利分布的Value实例 / Create a Value instance for Rayleigh distribution
+    let logNormal mu sigma = Distribution(stat.LogNormal(mu, sigma)) // 创建对数正态分布的Value实例 / Create a Value instance for log-normal distribution
+    let invSine min max = Distribution(stat.InvSine(min, max)) // 创建反正弦分布的Value实例 / Create a Value instance for inverse sine distribution
+    let sampleDist samples = Distribution(stat.Sample(samples)) // 创建样本分布的Value实例 / Create a Value instance for sample distribution
+
+    let bootstrap n samples =
+        Distribution(stat.Bootstrap(n, samples)) // 创建Bootstrap分布的Value实例 / Create a Value instance for Bootstrap distribution
+
+    let bootstrapStruct bs = Distribution(stat.BootstrapStruct(bs)) // 创建Bootstrap样本结构的Value实例 / Create a Value instance for Bootstrap samples structure

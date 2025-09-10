@@ -54,7 +54,8 @@ let erf z =
 数学定义：误差函数定义为：
 $$\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$$
 
-参考文献：Abramowitz, M. and Stegun, I. A. "Error Function and Fresnel Integrals." Ch. 7 in Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables, 9th printing. New York: Dover, pp. 297-309, 1972.
+参考文献：Abramowitz, M. and Stegun, I. A. "Error Function and Fresnel Integrals." Ch. 7 in Handbook of Mathematical
+Functions with Formulas, Graphs, and Mathematical Tables, 9th printing. New York: Dover, pp. 297-309, 1972.
 
 在线参考：[MathWorld - Error Function](https://mathworld.wolfram.com/Erf.html)
 
@@ -64,9 +65,9 @@ $$\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$$
 
 参数：`Normal(a, b)` 其中 `a` 和 `b` 定义 95% 置信区间。
 
-均值：  $\mu = \frac{a + b}{2}$。
+均值： $\mu = \frac{a + b}{2}$。
 
-标准差：  $\sigma = \frac{b - a}{4}$。
+标准差： $\sigma = \frac{b - a}{4}$。
 
 概率密度函数： $f(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left(-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2\right)$。
 
@@ -96,17 +97,20 @@ $$\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$$
 
 均值： $\mu = \frac{\text{min} + \text{mode} + \text{max}}{3}$。
 
-方差： $\sigma^2 = \frac{\text{min}^2 + \text{mode}^2 + \text{max}^2 - \text{min} \cdot \text{mode} - \text{min} \cdot \text{max} - \text{mode} \cdot \text{max}}{18}$。
+方差： $\sigma^2 = \frac{\text{min}^2 + \text{mode}^2 + \text{max}^2 - \text{min} \cdot \text{mode} - \text{min} \cdot
+\text{max} - \text{mode} \cdot \text{max}}{18}$。
 
 概率密度函数：
 
 $$f(x) = \begin{cases}
-\frac{2(x-\text{min})}{(\text{max}-\text{min})(\text{mode}-\text{min})} & \text{对于 } \text{min} \leq x \leq \text{mode} \\
+\frac{2(x-\text{min})}{(\text{max}-\text{min})(\text{mode}-\text{min})} & \text{对于 } \text{min} \leq x \leq
+\text{mode} \\
 \frac{2(\text{max}-x)}{(\text{max}-\text{min})(\text{max}-\text{mode})} & \text{对于 } \text{mode} < x \leq \text{max}
 \end{cases}
 $$
 
-参考文献：Evans, M.; Hastings, N.; and Peacock, B. "Triangular Distribution." Ch. 40 in Statistical Distributions, 3rd ed. New York: Wiley, pp. 187-188, 2000.
+参考文献：Evans, M.; Hastings, N.; and Peacock, B. "Triangular Distribution." Ch. 40 in Statistical Distributions, 3rd
+ed. New York: Wiley, pp. 187-188, 2000.
 
 在线参考：[MathWorld - Triangular Distribution](https://mathworld.wolfram.com/TriangularDistribution.html)
 
@@ -185,7 +189,8 @@ $$
 
 标准差： $\sigma = \frac{\text{max} - \text{min}}{2\sqrt{2}}$。
 
-概率密度函数： $f(x) = \frac{1}{\pi\sqrt{u(1-u)(\text{max}-\text{min})}}$ ，其中  $u = \frac{x-\text{min}}{\text{max}-\text{min}}$ 。
+概率密度函数： $f(x) = \frac{1}{\pi\sqrt{u(1-u)(\text{max}-\text{min})}}$ ，其中 $u =
+\frac{x-\text{min}}{\text{max}-\text{min}}$ 。
 
 累积分布函数： $F(x) = \frac{2}{\pi}\arcsin(\sqrt{u})$。
 
@@ -205,7 +210,8 @@ $$
 
 应用：风速建模、波高分析、可靠性工程。
 
-参考文献：Papoulis, A. Probability, Random Variables, and Stochastic Processes, 2nd ed. New York: McGraw-Hill, pp. 104 and 148, 1984。
+参考文献：Papoulis, A. Probability, Random Variables, and Stochastic Processes, 2nd ed. New York: McGraw-Hill, pp. 104
+and 148, 1984。
 
 在线参考：[MathWorld - Rayleigh Distribution](https://mathworld.wolfram.com/RayleighDistribution.html)
 
@@ -217,7 +223,8 @@ $$
 
 方差： $\text{Var}[X] = (\exp(\sigma^2) - 1)\exp(2\mu + \sigma^2)$。
 
-概率密度函数： $f(x) = \frac{1}{x\sigma\sqrt{2\pi}}\exp\left(-\frac{1}{2}\left(\frac{\ln(x)-\mu}{\sigma}\right)^2\right)$ 对于 $x > 0$。
+概率密度函数： $f(x) = \frac{1}{x\sigma\sqrt{2\pi}}\exp\left(-\frac{1}{2}\left(\frac{\ln(x)-\mu}{\sigma}\right)^2\right)$
+对于 $x > 0$。
 
 应用：金融建模、粒度分布、环境数据。
 
@@ -405,11 +412,13 @@ let kernel u = (1.0 / sqrt(2.0 * System.Math.PI)) * exp(-0.5 * u * u)
 
 ## 参考文献和延伸阅读
 
-主要数学参考文献：Abramowitz, M. and Stegun, I. A. Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables, 9th printing. New York: Dover, 1972。
+主要数学参考文献：Abramowitz, M. and Stegun, I. A. Handbook of Mathematical Functions with Formulas, Graphs, and
+Mathematical Tables, 9th printing. New York: Dover, 1972。
 
 主要数学参考文献：Evans, M.; Hastings, N.; and Peacock, B. Statistical Distributions, 3rd ed. New York: Wiley, 2000。
 
-主要数学参考文献：Papoulis, A. Probability, Random Variables, and Stochastic Processes, 2nd ed. New York: McGraw-Hill, 1984。
+主要数学参考文献：Papoulis, A. Probability, Random Variables, and Stochastic Processes, 2nd ed. New York: McGraw-Hill,
+1984。
 
 在线数学资源：[MathWorld - Error Function](https://mathworld.wolfram.com/Erf.html)。
 
