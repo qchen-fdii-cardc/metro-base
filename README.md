@@ -6,6 +6,8 @@
 
 ## 概述
 
+[Nuget Package Page](https://www.nuget.org/packages/metro-base.fsharp.qc/)
+
 Metro-Base 是一个专为统计计量学应用设计的综合性 F# 库，提供先进的概率分布建模、不确定度量化和蒙特卡洛仿真功能。该库为测量科学和工程中常用的各种概率分布实现了解析和数值方法。
 
 ### 代码优化特性
