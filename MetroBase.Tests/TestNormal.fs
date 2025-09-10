@@ -13,12 +13,18 @@ let ``Normal(0,1) facts`` () =
     Assert.Equal(1.959049, kp d 0.95, 6)
     Assert.Equal(2.572466, expandedUncertainty d 0.99, 6)
     Assert.Equal(1.959049, expandedUncertainty d 0.95, 6)
-
+    
+    
 [<Theory>]
-[<InlineData(0.0, 10.0, 0.0)>]
-[<InlineData(0.0, 10.0, 10.0)>]
-[<InlineData(-2.0, 2.0, 0.0)>]
-let ``cdf of Normal is within [0,1]`` (mu: float) (sigma: float) (x: float) =
-    let d = Normal(mu, sigma)
-    let p = cdf d x
-    Assert.InRange(p, 0.0, 1.0)
+[<InlineData(-3.0, 0.004432)>]
+[<InlineData(-2.0, 0.053991)>]
+[<InlineData(-1.0, 0.241971)>]
+[<InlineData(0.0, 0.398942)>]
+[<InlineData(1.0, 0.241971)>]
+[<InlineData(2.0, 0.053991)>]
+[<InlineData(3.0, 0.004432)>]
+let ``Normal PDF x -> p`` x p =
+    let d = Normal(0.0, 1.0)
+    Assert.Equal(p, pdf d x, 6)
+    
+
