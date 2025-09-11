@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "metro-base", "metro-base.fsproj", "{3A7A893A-0D4D-41F3-8C54-E96BDD9DE45E}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "metro-console", "metro-console.fsproj", "{8D52CF28-62A1-4A65-94CB-F8B8B1E2B718}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MetroBase.Tests", "MetroBase.Tests\MetroBase.Tests.fsproj", "{83E79CC9-0485-4B9F-8EF2-E387CAA2C163}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3A7A893A-0D4D-41F3-8C54-E96BDD9DE45E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A7A893A-0D4D-41F3-8C54-E96BDD9DE45E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A7A893A-0D4D-41F3-8C54-E96BDD9DE45E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A7A893A-0D4D-41F3-8C54-E96BDD9DE45E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D52CF28-62A1-4A65-94CB-F8B8B1E2B718}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D52CF28-62A1-4A65-94CB-F8B8B1E2B718}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D52CF28-62A1-4A65-94CB-F8B8B1E2B718}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D52CF28-62A1-4A65-94CB-F8B8B1E2B718}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83E79CC9-0485-4B9F-8EF2-E387CAA2C163}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83E79CC9-0485-4B9F-8EF2-E387CAA2C163}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83E79CC9-0485-4B9F-8EF2-E387CAA2C163}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83E79CC9-0485-4B9F-8EF2-E387CAA2C163}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
