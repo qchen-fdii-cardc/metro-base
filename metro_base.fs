@@ -145,6 +145,111 @@ module stat =
             math.BootstrapSamples(n, samples).Stdev()
         | BootstrapStruct(bs) -> // Bootstrap samples structure std
             bs.Stdev()
+
+    // Calculate distribution variance
+    let variance dist =
+        match dist with
+        | Uniform(a, b) -> ((b - a) ** 2.0) / 12.0
+        | Normal(_, sigma) -> sigma ** 2.0
+        | Triangular(min, mode, max) -> (min * min + mode * mode + max * max - min * mode - min * max - mode * max) / 18.0
+        | Trapezoidal(a, b, c, d) ->
+            let mean_val = (a + b + c + d) / 4.0
+            let var =
+                ((a - mean_val) ** 2.0
+                 + (b - mean_val) ** 2.0
+                 + (c - mean_val) ** 2.0
+                 + (d - mean_val) ** 2.0
+                 + (a - mean_val) * (b - mean_val)
+                 + (b - mean_val) * (c - mean_val)
+                 + (c - mean_val) * (d - mean_val))
+                / 18.0
+            abs var
+        | TrapezoidalPlateau(a, b, plateau) ->
+            let total_width = b - a
+            let var = (total_width * total_width - plateau * plateau) / 18.0
+            abs var
+        | UShape(min, max) -> ((max - min) ** 2.0) / 8.0
+        | Rayleigh(sigma) -> sigma * sigma * (2.0 - math.MathHelpers.pi / 2.0)
+        | LogNormal(mu, sigma) -> (exp (sigma * sigma) - 1.0) * exp (2.0 * mu + sigma * sigma)
+        | InvSine(min, max) -> ((max - min) ** 2.0) / 8.0
+        | Sample(samples) ->
+            let mean = Array.average samples
+            Array.average (Array.map (fun x -> (x - mean) ** 2.0) samples)
+        | Bootstrap(n, samples) ->
+            let bs = math.BootstrapSamples(n, samples)
+            let mean = bs.Mean()
+            Array.average (Array.map (fun x -> (x - mean) ** 2.0) (bs.Sample()))
+        | BootstrapStruct(bs) ->
+            let mean = bs.Mean()
+            Array.average (Array.map (fun x -> (x - mean) ** 2.0) (bs.Sample()))
+
+    // Generate a random sample from the distribution
+    let sample dist =
+        let rand = System.Random()
+        match dist with
+        | Uniform(a, b) -> a + rand.NextDouble() * (b - a)
+        | Normal(mu, sigma) ->
+            // Box-Muller transform
+            let u1 = rand.NextDouble()
+            let u2 = rand.NextDouble()
+            let z0 = sqrt(-2.0 * log u1) * cos(2.0 * math.MathHelpers.pi * u2)
+            mu + sigma * z0
+        | Triangular(min, mode, max) ->
+            let u = rand.NextDouble()
+            let c = (mode - min) / (max - min)
+            if u < c then
+                min + sqrt(u * (max - min) * (mode - min))
+            else
+                max - sqrt((1.0 - u) * (max - min) * (max - mode))
+        | Trapezoidal(a, b, c, d) ->
+            // Approximate by rejection sampling
+            let rec loop () =
+                let x = a + rand.NextDouble() * (d - a)
+                let h = 2.0 / (d - a + c - b)
+                let y = rand.NextDouble() * h
+                let pdf =
+                    if x < b then (x - a) / ((b - a) * (c - a))
+                    elif x < c then 1.0 / (c - a)
+                    else (d - x) / ((d - c) * (d - b))
+                if y < pdf then x else loop ()
+            loop ()
+        | TrapezoidalPlateau(a, b, plateau) ->
+            // Approximate by rejection sampling
+            let rec loop () =
+                let x = a + rand.NextDouble() * (b - a)
+                let h = 2.0 / (b - a + plateau)
+                let y = rand.NextDouble() * h
+                let left = (b - a - plateau) / 2.0
+                let pdf =
+                    if x < a + left then (x - a) / left
+                    elif x < b - left then 1.0
+                    else (b - x) / left
+                if y < pdf then x else loop ()
+            loop ()
+        | UShape(min, max) ->
+            let u = rand.NextDouble()
+            min + (max - min) * sin (math.MathHelpers.pi * u / 2.0) ** 2.0
+        | Rayleigh(sigma) ->
+            let u = rand.NextDouble()
+            sigma * sqrt(-2.0 * log(1.0 - u))
+        | LogNormal(mu, sigma) ->
+            let u1 = rand.NextDouble()
+            let u2 = rand.NextDouble()
+            let z0 = sqrt(-2.0 * log u1) * cos(2.0 * math.MathHelpers.pi * u2)
+            exp (mu + sigma * z0)
+        | InvSine(min, max) ->
+            let u = rand.NextDouble()
+            min + (max - min) * sin (math.MathHelpers.pi * u / 2.0) ** 2.0
+        | Sample(samples) ->
+            samples.[rand.Next(samples.Length)]
+        | Bootstrap(n, samples) ->
+            let bs = math.BootstrapSamples(n, samples)
+            let arr = bs.Sample()
+            arr.[rand.Next(arr.Length)]
+        | BootstrapStruct(bs) ->
+            let arr = bs.Sample()
+            arr.[rand.Next(arr.Length)]
+
     // Evaluate polynomial using Horner's method
     let evalPolyHorner t (coeffs: float list) =
         List.foldBack (fun c acc -> c + t * acc) coeffs 0.0
@@ -884,75 +989,7 @@ module measurement =
     let rec sample (r: System.Random) value =
         match value with
         | Exact v -> v // 精确值直接返回 / Return exact value directly
-        | Distribution dist -> // 从分布中抽样 / Sample from distribution
-            match dist with
-            | stat.Uniform(a, b) -> // 均匀分布抽样 / Uniform distribution sampling
-                // Direct uniform sampling between lower bound a and upper bound b
-                let u = r.NextDouble()
-                a + u * (b - a)
-            | stat.Normal(mu, sigma) -> // 正态分布抽样 / Normal distribution sampling
-                // Box-Muller变换 / Box-Muller transform
-                let u1 = r.NextDouble()
-                let u2 = r.NextDouble()
-                mu + sigma * sqrt (-2.0 * log (u1)) * cos (2.0 * MathHelpers.pi * u2)
-            | stat.Triangular(min, mode, max) -> // 三角分布抽样 / Triangular distribution sampling
-                let u = r.NextDouble()
-                let fc = (mode - min) / (max - min)
-
-                if u < fc then
-                    min + sqrt (u * (max - min) * (mode - min))
-                else
-                    max - sqrt ((1.0 - u) * (max - min) * (max - mode))
-            | stat.Trapezoidal(a, b, c, d) -> // 梯形分布抽样 / Trapezoidal distribution sampling
-                let u = r.NextDouble()
-                let p1 = (b - a) / (2.0 * (d - a))
-                let p2 = (c - a) / (d - a)
-                let p3 = 1.0 - (d - c) / (2.0 * (d - a))
-
-                if u <= p1 then a + sqrt (2.0 * u * (b - a) * (c - a))
-                elif u <= p2 then a + u * (d - a)
-                elif u <= p3 then a + u * (d - a)
-                else d - sqrt (2.0 * (1.0 - u) * (d - c) * (d - b))
-            | stat.TrapezoidalPlateau(a, b, plateau) -> // 平台梯形分布抽样 / Plateau trapezoidal sampling
-                let u = r.NextDouble()
-                stat.invCdf (stat.TrapezoidalPlateau(a, b, plateau)) u // Use inverse CDF sampling
-            | stat.UShape(min, max) -> // U型分布抽样 / U-shape distribution sampling
-                let u = r.NextDouble()
-                let v = sin (u * MathHelpers.pi / 2.0) ** 2.0
-                min + v * (max - min)
-            | stat.Rayleigh(sigma) -> // 瑞利分布抽样 / Rayleigh distribution sampling
-                let u = r.NextDouble()
-                sigma * sqrt (-2.0 * log (1.0 - u))
-            | stat.LogNormal(mu, sigma) -> // 对数正态分布抽样 / Log-normal distribution sampling
-                let u1 = r.NextDouble()
-                let u2 = r.NextDouble()
-                let z = sqrt (-2.0 * log (u1)) * cos (2.0 * MathHelpers.pi * u2)
-                exp (mu + sigma * z)
-            | stat.InvSine(min, max) -> // 反正弦分布抽样 / Inverse sine distribution sampling
-                let u = r.NextDouble()
-                let v = sin (u * MathHelpers.pi / 2.0) ** 2.0
-                min + v * (max - min)
-            | stat.Sample(samples) -> // 样本分布抽样 / Sample distribution sampling
-                if samples.Length = 0 then
-                    failwith "Sample distribution has no samples"
-                else
-                    let index = r.Next(0, samples.Length)
-                    samples.[index]
-            | stat.Bootstrap(n, samples) -> // Bootstrap抽样 / Bootstrap sampling
-                if samples.Length = 0 then
-                    failwith "Bootstrap distribution has no samples"
-                else
-                    let bootstrapSamples = BootstrapSamples(n, samples).Sample()
-
-                    if bootstrapSamples.Length = 0 then
-                        failwith "Bootstrap distribution has no samples"
-                    else
-                        let index = r.Next(0, bootstrapSamples.Length)
-                        bootstrapSamples.[index]
-            | stat.BootstrapStruct(bs) -> // Bootstrap样本结构抽样 / Bootstrap samples structure sampling
-                let sampled = bs.Sample()
-                let index = r.Next(0, sampled.Length)
-                sampled.[index]
+        | Distribution dist -> stat.sample dist // 直接调用stat.sample，避免重复
         // 复合运算的抽样处理 / Sampling handling for composite operations
         | Addition(v1, v2) -> sample r v1 + sample r v2 // 加法抽样 / Addition sampling
         | Bias(v, b) -> sample r v + b // 偏差修正抽样 / Bias correction sampling
@@ -971,13 +1008,13 @@ module measurement =
         | ASin v -> asin (sample r v) // 反正弦抽样 / Arcsine sampling
         | ACos v -> acos (sample r v) // 反余弦抽样 / Arccosine sampling
         | ATan v -> atan (sample r v) // 反正切抽样 / Arctangent sampling
-        | ATan2(v1, v2) -> atan2 (sample r v1) (sample r v2) // 二参数反正切抽样 / Two-parameter arctangent sampling
+        | ATan2(v1, v2) -> atan2 (sample r v1) (sample r v2) // 二参数反正切 / Two-parameter arctangent sampling
         | Sinh v -> sinh (sample r v) // 双曲正弦抽样 / Hyperbolic sine sampling
         | Cosh v -> cosh (sample r v) // 双曲余弦抽样 / Hyperbolic cosine sampling
-        | Tanh v -> tanh (sample r v) // 双曲正切抽样 / Hyperbolic tangent sampling
-        | Floor v -> floor (sample r v) // 向下取整抽样 / Floor sampling
-        | Ceil v -> ceil (sample r v) // 向上取整抽样 / Ceiling sampling
-        | Round v -> round (sample r v) // 四舍五入抽样 / Rounding sampling
+        | Tanh v -> tanh (sample r v) // 双曲正切 / Hyperbolic tangent sampling
+        | Floor v -> floor (sample r v) // 向下取整抽样 / Floor
+        | Ceil v -> ceil (sample r v) // 向上取整抽样 / Ceiling
+        | Round v -> round (sample r v) // 四舍五入抽样 / Rounding
         | Log10 v -> log10 (sample r v) // 常用对数抽样 / Common logarithm sampling
         | Log2 v -> log (sample r v) / log 2.0 // 二进制对数抽样 / Binary logarithm sampling
         | Log(v, b) -> log (sample r v) / log b // 任意底对数抽样 / Arbitrary base logarithm sampling
@@ -1087,3 +1124,6 @@ module measurement =
         Distribution(stat.Bootstrap(n, samples)) // 创建Bootstrap分布的Value实例 / Create a Value instance for Bootstrap distribution
 
     let bootstrapStruct bs = Distribution(stat.BootstrapStruct(bs)) // 创建Bootstrap样本结构的Value实例 / Create a Value instance for Bootstrap samples structure
+
+
+
