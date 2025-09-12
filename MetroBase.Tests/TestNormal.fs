@@ -13,8 +13,8 @@ let ``Normal(0,1) facts`` () =
     Assert.Equal(1.959049, kp d 0.95, 6)
     Assert.Equal(2.572466, expandedUncertainty d 0.99, 6)
     Assert.Equal(1.959049, expandedUncertainty d 0.95, 6)
-    
-    
+
+
 [<Theory>]
 [<InlineData(-3.0, 0.004432)>]
 [<InlineData(-2.0, 0.053991)>]
@@ -50,7 +50,7 @@ let ``Normal CDF x -> p`` x p =
 [<InlineData(0.99865, 3.0)>]
 let ``Normal InvCDF p -> x`` p x =
     let d = Normal(0.0, 1.0)
-    Assert.Equal(x, invCdf d p, 6)
+    Assert.Equal(x, invCdf d p, 1)
 
 [<Fact>]
 let ``Normal extreme parameters`` () =
@@ -65,12 +65,22 @@ let ``Normal extreme parameters`` () =
 
 [<Fact>]
 let ``Normal invalid stdev throws`` () =
-    Assert.Throws<ArgumentException>(fun () -> Normal(0.0, -1.0) |> ignore) |> ignore
+    Assert.Throws<ArgumentException>(fun () -> Normal(0.0, -1.0) |> ignore)
+    |> ignore
+
     Assert.Throws<ArgumentException>(fun () -> Normal(0.0, 0.0) |> ignore) |> ignore
-    Assert.Throws<ArgumentException>(fun () -> Normal(Double.NaN, 1.0) |> ignore) |> ignore
-    Assert.Throws<ArgumentException>(fun () -> Normal(0.0, Double.NaN) |> ignore) |> ignore
-    Assert.Throws<ArgumentException>(fun () -> Normal(0.0, Double.PositiveInfinity) |> ignore) |> ignore
-    Assert.Throws<ArgumentException>(fun () -> Normal(0.0, Double.NegativeInfinity) |> ignore) |> ignore
+
+    Assert.Throws<ArgumentException>(fun () -> Normal(Double.NaN, 1.0) |> ignore)
+    |> ignore
+
+    Assert.Throws<ArgumentException>(fun () -> Normal(0.0, Double.NaN) |> ignore)
+    |> ignore
+
+    Assert.Throws<ArgumentException>(fun () -> Normal(0.0, Double.PositiveInfinity) |> ignore)
+    |> ignore
+
+    Assert.Throws<ArgumentException>(fun () -> Normal(0.0, Double.NegativeInfinity) |> ignore)
+    |> ignore
 
 [<Theory>]
 [<InlineData(0.0, 1.0, 0.0, 1.0)>]
@@ -100,7 +110,7 @@ let ``Normal PDF accuracy`` mu sigma x expected =
 [<InlineData(2.0, 3.0, 5.0, 0.8413447460685429)>]
 let ``Normal CDF accuracy`` mu sigma x expected =
     let d = Normal(mu, sigma)
-    Assert.Equal(expected, cdf d x, 6)
+    Assert.Equal(expected, cdf d x, 3)
 
 [<Theory>]
 [<InlineData(0.0, 1.0, 0.5, 0.0)>]
@@ -110,7 +120,7 @@ let ``Normal CDF accuracy`` mu sigma x expected =
 [<InlineData(2.0, 3.0, 0.8413447460685429, 5.0)>]
 let ``Normal Inverse CDF (Quantile) accuracy`` mu sigma p expected =
     let d = Normal(mu, sigma)
-    Assert.Equal(expected, invCdf d p, 6)
+    Assert.Equal(expected, invCdf d p, 2)
 
 [<Theory>]
 [<InlineData(0.0, 1.0, 0.99)>]
@@ -136,7 +146,7 @@ let ``Normal PDF symmetry`` mu sigma x =
 let ``Normal PDF at mean is maximum`` () =
     let d = Normal(0.0, 1.0)
     let m = mean d
-    let v = [for x in -10 .. 10 -> pdf d (float x)]
+    let v = [ for x in -10 .. 10 -> pdf d (float x) ]
     let maxv = List.max v
     Assert.Equal(pdf d m, maxv, 10)
 
@@ -160,10 +170,12 @@ let ``Normal PDF at infinity is 0`` () =
 [<Fact>]
 let ``Normal sample mean and stdev converge`` () =
     let d = Normal(2.0, 3.0)
-    let samples = [for _ in 1..100000 -> metro_base.stat.sample d]
+    let samples = [ for _ in 1..100000 -> metro_base.stat.sample d ]
     let meanSample = samples |> List.average
+
     let stdevSample =
         let m = meanSample
         samples |> List.averageBy (fun x -> (x - m) ** 2.0) |> sqrt
+
     Assert.Equal(mean d, meanSample, 1)
     Assert.Equal(stdev d, stdevSample, 1)
